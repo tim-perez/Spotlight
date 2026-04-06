@@ -19,8 +19,10 @@ import com.spotlight.model.Question;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class GameActivity extends AppCompatActivity {
 
@@ -165,7 +167,7 @@ public class GameActivity extends AppCompatActivity {
                 textViewPassTo.setText("Pass the device back to " + spotlightPlayer.getName());
                 textViewPhaseTitle.setText("Voting Phase Prep");
                 textViewTargetPlayer.setText("");
-                textViewQuestion.setText("No one guessed it exactly! Time for the voting phase.");
+                textViewQuestion.setText("Time for the voting phase.");
                 break;
 
             case VOTING:
@@ -209,11 +211,13 @@ public class GameActivity extends AppCompatActivity {
         } else if (currentPhase == Phase.PASS_TO_GUESSER) {
             setPhase(Phase.GUESSER_INPUT);
         } else if (currentPhase == Phase.VOTING_PASS) {
-            setupVotingOptions();
+            boolean moreThanOne = setupVotingOptions();
             currentGuesserIndex = -1;
-            if (findNextGuesser()) {
+            if (moreThanOne && findNextGuesser()) {
                 setPhase(Phase.VOTING);
             } else {
+                // Only one option left or no guessers, skip to results
+                calculateVotingScores();
                 setPhase(Phase.RESULTS);
             }
         }
@@ -257,15 +261,42 @@ public class GameActivity extends AppCompatActivity {
         setPhase(Phase.RESULTS);
     }
 
-    private void setupVotingOptions() {
+    private boolean setupVotingOptions() {
         allAnswerOptions.clear();
-        allAnswerOptions.add(secretAnswer);
+        
+        // Count occurrences of each guess (excluding spotlight's answer)
+        Map<String, Integer> counts = new HashMap<>();
         for (String guess : playerGuesses.values()) {
-            if (!allAnswerOptions.contains(guess)) {
-                allAnswerOptions.add(guess);
+            if (!guess.equalsIgnoreCase(secretAnswer)) {
+                String normalized = guess.toLowerCase().trim();
+                counts.put(normalized, counts.getOrDefault(normalized, 0) + 1);
             }
         }
+
+        // Identify duplicates to remove
+        Set<String> duplicates = new HashSet<>();
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            if (entry.getValue() > 1) {
+                duplicates.add(entry.getKey());
+            }
+        }
+
+        // Add the correct answer
+        allAnswerOptions.add(secretAnswer);
+
+        // Add unique guesses only
+        for (String guess : playerGuesses.values()) {
+            if (!guess.equalsIgnoreCase(secretAnswer)) {
+                if (!duplicates.contains(guess.toLowerCase().trim())) {
+                    if (!allAnswerOptions.contains(guess)) {
+                        allAnswerOptions.add(guess);
+                    }
+                }
+            }
+        }
+        
         Collections.shuffle(allAnswerOptions);
+        return allAnswerOptions.size() > 1;
     }
 
     private void prepareVotingUI() {
@@ -292,7 +323,6 @@ public class GameActivity extends AppCompatActivity {
             }
         } else if (currentPhase == Phase.RESULTS) {
             if (checkForWinner()) {
-                // Return to main menu or setup
                 finish();
             } else {
                 spotlightPlayerIndex = (spotlightPlayerIndex + 1) % players.size();
@@ -303,6 +333,12 @@ public class GameActivity extends AppCompatActivity {
 
     private void calculateVotingScores() {
         Player spotlight = players.get(spotlightPlayerIndex);
+        
+        // If there was only one option left (the correct one), no one gets any points
+        if (allAnswerOptions.size() == 1) {
+             return;
+        }
+
         for (Map.Entry<Player, String> entry : playerVotes.entrySet()) {
             Player voter = entry.getKey();
             String vote = entry.getValue();
