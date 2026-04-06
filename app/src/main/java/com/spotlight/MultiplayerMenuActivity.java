@@ -15,6 +15,7 @@ public class MultiplayerMenuActivity extends AppCompatActivity {
 
         Button buttonCreateRoom = findViewById(R.id.buttonCreateRoom);
         Button buttonJoinRoom = findViewById(R.id.buttonJoinRoom);
+        findViewById(R.id.buttonBack).setOnClickListener(v -> finish());
 
         buttonCreateRoom.setOnClickListener(v -> {
             Intent intent = new Intent(this, CreateRoomActivity.class);

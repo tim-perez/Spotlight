@@ -31,6 +31,9 @@ public class GameSetupActivity extends AppCompatActivity {
         RecyclerView recyclerViewPlayers = findViewById(R.id.recyclerViewPlayers);
         Button buttonAddPlayer = findViewById(R.id.buttonAddPlayer);
         Button buttonStartGame = findViewById(R.id.buttonStartGame);
+        View buttonBack = findViewById(R.id.buttonBack);
+
+        buttonBack.setOnClickListener(v -> finish());
 
         adapter = new PlayerAdapter(players);
         recyclerViewPlayers.setLayoutManager(new LinearLayoutManager(this));
