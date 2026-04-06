@@ -7,78 +7,164 @@
     android:padding="16dp"
     tools:context=".GameActivity">
 
+    <!-- Header info -->
     <TextView
-        android:id="@+id/textViewSpotlightPlayer"
+        android:id="@+id/textViewPhaseTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Player's Name"
-        android:textSize="28sp"
+        android:text="Phase Title"
+        android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@color/black"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="32dp"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
-        android:id="@+id/textViewLabel"
+        android:id="@+id/textViewTargetPlayer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="is in the Spotlight!"
+        android:text="Current Player"
         android:textSize="18sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textViewPhaseTitle"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewSpotlightPlayer" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp"/>
 
+    <!-- Question Card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardViewQuestion"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="24dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewLabel">
+        app:layout_constraintTop_toBottomOf="@+id/textViewTargetPlayer">
 
         <TextView
             android:id="@+id/textViewQuestion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="24dp"
+            android:padding="20dp"
             android:text="Question goes here..."
             android:textAlignment="center"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:textStyle="italic" />
     </androidx.cardview.widget.CardView>
 
-    <TextView
-        android:id="@+id/textViewInstruction"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Who guessed correctly?"
-        android:layout_marginTop="32dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/cardViewQuestion" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewGuessers"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="16dp"
-        app:layout_constraintBottom_toTopOf="@+id/buttonNextTurn"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewInstruction" />
-
-    <Button
-        android:id="@+id/buttonNextTurn"
+    <!-- Answer Input Section (Hidden by default) -->
+    <LinearLayout
+        android:id="@+id/layoutAnswerInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Next Turn"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/cardViewQuestion"
+        android:layout_marginTop="32dp">
+
+        <EditText
+            android:id="@+id/editTextAnswer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Type your answer here..."
+            android:inputType="textCapSentences" />
+
+        <Button
+            android:id="@+id/buttonSubmitAnswer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Submit Answer"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
+
+    <!-- Selection/Voting Section (Hidden by default) -->
+    <LinearLayout
+        android:id="@+id/layoutSelection"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/cardViewQuestion"
+        app:layout_constraintBottom_toTopOf="@id/buttonAction"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:id="@+id/textViewSelectionPrompt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pick the Spotlight player's answer:"
+            android:layout_marginBottom="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewChoices"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </LinearLayout>
+
+    <!-- Pass Device Section (Hidden by default) -->
+    <LinearLayout
+        android:id="@+id/layoutPassDevice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="visible"
+        app:layout_constraintTop_toBottomOf="@id/cardViewQuestion"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:id="@+id/textViewPassTo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pass the device to [Name]"
+            android:textSize="22sp"
+            android:textAlignment="center"/>
+
+        <Button
+            android:id="@+id/buttonReady"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="I am Ready"
+            android:layout_marginTop="24dp"/>
+    </LinearLayout>
+
+    <!-- Result Section (Hidden by default) -->
+    <LinearLayout
+        android:id="@+id/layoutResults"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/cardViewQuestion"
+        app:layout_constraintBottom_toTopOf="@id/buttonAction"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Round Results"
+            android:textStyle="bold"
+            android:textSize="18sp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewResults"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+
+    <!-- Common Action Button (at bottom) -->
+    <Button
+        android:id="@+id/buttonAction"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Continue"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
