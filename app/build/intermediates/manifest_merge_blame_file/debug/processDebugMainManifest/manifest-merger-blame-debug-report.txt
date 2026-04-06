@@ -23,7 +23,7 @@
 15-->[androidx.core:core:1.9.0] /Users/timperez/.gradle/caches/9.3.1/transforms/6952a47358fc85097fa4e62e6b265bb3/transformed/core-1.9.0/AndroidManifest.xml:26:22-94
 16
 17    <application
-17-->/Users/timperez/Documents/GitHub/Spotlight/app/src/main/AndroidManifest.xml:4:5-21:19
+17-->/Users/timperez/Documents/GitHub/Spotlight/app/src/main/AndroidManifest.xml:4:5-24:19
 18        android:allowBackup="true"
 18-->/Users/timperez/Documents/GitHub/Spotlight/app/src/main/AndroidManifest.xml:5:9-35
 19        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
@@ -64,28 +64,37 @@
 37        <activity android:name="com.spotlight.GameActivity" />
 37-->/Users/timperez/Documents/GitHub/Spotlight/app/src/main/AndroidManifest.xml:20:9-50
 37-->/Users/timperez/Documents/GitHub/Spotlight/app/src/main/AndroidManifest.xml:20:19-47
-38
-39        <provider
-39-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
-40            android:name="androidx.startup.InitializationProvider"
-40-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:25:13-67
-41            android:authorities="com.spotlight.androidx-startup"
-41-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:26:13-68
-42            android:exported="false" >
-42-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:27:13-37
-43            <meta-data
-43-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
-44                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-44-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:30:17-75
-45                android:value="androidx.startup" />
-45-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:31:17-49
+38        <activity android:name="com.spotlight.MultiplayerMenuActivity" />
+38-->/Users/timperez/Documents/GitHub/Spotlight/app/src/main/AndroidManifest.xml:21:9-61
+38-->/Users/timperez/Documents/GitHub/Spotlight/app/src/main/AndroidManifest.xml:21:19-58
+39        <activity android:name="com.spotlight.CreateRoomActivity" />
+39-->/Users/timperez/Documents/GitHub/Spotlight/app/src/main/AndroidManifest.xml:22:9-56
+39-->/Users/timperez/Documents/GitHub/Spotlight/app/src/main/AndroidManifest.xml:22:19-53
+40        <activity android:name="com.spotlight.JoinRoomActivity" />
+40-->/Users/timperez/Documents/GitHub/Spotlight/app/src/main/AndroidManifest.xml:23:9-54
+40-->/Users/timperez/Documents/GitHub/Spotlight/app/src/main/AndroidManifest.xml:23:19-51
+41
+42        <provider
+42-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+43            android:name="androidx.startup.InitializationProvider"
+43-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:25:13-67
+44            android:authorities="com.spotlight.androidx-startup"
+44-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:26:13-68
+45            android:exported="false" >
+45-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:27:13-37
 46            <meta-data
-46-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/timperez/.gradle/caches/9.3.1/transforms/4562dafb5cdfff015d13d2dcb0016e1e/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:31:13-33:52
-47                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-47-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/timperez/.gradle/caches/9.3.1/transforms/4562dafb5cdfff015d13d2dcb0016e1e/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:32:17-78
+46-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+47                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+47-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:30:17-75
 48                android:value="androidx.startup" />
-48-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/timperez/.gradle/caches/9.3.1/transforms/4562dafb5cdfff015d13d2dcb0016e1e/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:33:17-49
-49        </provider>
-50    </application>
-51
-52</manifest>
+48-->[androidx.emoji2:emoji2:1.2.0] /Users/timperez/.gradle/caches/9.3.1/transforms/831a705722417c11da4cfd0e623b2645/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:31:17-49
+49            <meta-data
+49-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/timperez/.gradle/caches/9.3.1/transforms/4562dafb5cdfff015d13d2dcb0016e1e/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:31:13-33:52
+50                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+50-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/timperez/.gradle/caches/9.3.1/transforms/4562dafb5cdfff015d13d2dcb0016e1e/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:32:17-78
+51                android:value="androidx.startup" />
+51-->[androidx.lifecycle:lifecycle-process:2.4.1] /Users/timperez/.gradle/caches/9.3.1/transforms/4562dafb5cdfff015d13d2dcb0016e1e/transformed/jetified-lifecycle-process-2.4.1/AndroidManifest.xml:33:17-49
+52        </provider>
+53    </application>
+54
+55</manifest>

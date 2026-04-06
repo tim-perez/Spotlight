@@ -35,6 +35,9 @@
         </activity>
         <activity android:name="com.spotlight.GameSetupActivity" />
         <activity android:name="com.spotlight.GameActivity" />
+        <activity android:name="com.spotlight.MultiplayerMenuActivity" />
+        <activity android:name="com.spotlight.CreateRoomActivity" />
+        <activity android:name="com.spotlight.JoinRoomActivity" />
 
         <provider
             android:name="androidx.startup.InitializationProvider"

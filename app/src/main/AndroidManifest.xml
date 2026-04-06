@@ -18,6 +18,9 @@
         </activity>
         <activity android:name=".GameSetupActivity" />
         <activity android:name=".GameActivity" />
+        <activity android:name=".MultiplayerMenuActivity" />
+        <activity android:name=".CreateRoomActivity" />
+        <activity android:name=".JoinRoomActivity" />
     </application>
 
 </manifest>
