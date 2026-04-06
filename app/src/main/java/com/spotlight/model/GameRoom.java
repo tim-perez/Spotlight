@@ -13,6 +13,7 @@ public class GameRoom implements Serializable {
     private String status; // WAITING, IN_PROGRESS, FINISHED
     private Map<String, String> guesses = new HashMap<>();
     private Map<String, String> votes = new HashMap<>();
+    private java.util.List<String> logs = new java.util.ArrayList<>();
 
     public GameRoom() {
         // Required for Firebase
@@ -86,5 +87,13 @@ public class GameRoom implements Serializable {
 
     public void setVotes(Map<String, String> votes) {
         this.votes = votes;
+    }
+
+    public java.util.List<String> getLogs() {
+        return logs == null ? new java.util.ArrayList<>() : logs;
+    }
+
+    public void setLogs(java.util.List<String> logs) {
+        this.logs = logs;
     }
 }

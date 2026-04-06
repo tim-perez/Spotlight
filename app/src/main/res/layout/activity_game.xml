@@ -8,26 +8,45 @@
     tools:context=".GameActivity">
 
     <!-- Header info -->
-    <ImageButton
-        android:id="@+id/buttonLeave"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@android:drawable/ic_menu_close_clear_cancel"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <TextView
-        android:id="@+id/textViewPhaseTitle"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/layoutHeader"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Phase Title"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toEndOf="@id/buttonLeave"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="48dp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/buttonLeave"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+        <TextView
+            android:id="@+id/textViewPhaseTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Phase Title"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textAlignment="center" />
+
+        <Button
+            android:id="@+id/buttonScoreSheet"
+            style="@style/Widget.AppCompat.Button.Small"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Scores" />
+
+        <Button
+            android:id="@+id/buttonLogs"
+            style="@style/Widget.AppCompat.Button.Small"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Logs" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/textViewTargetPlayer"
@@ -35,7 +54,7 @@
         android:layout_height="wrap_content"
         android:text="Current Player"
         android:textSize="18sp"
-        app:layout_constraintTop_toBottomOf="@id/textViewPhaseTitle"
+        app:layout_constraintTop_toBottomOf="@id/layoutHeader"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp"/>

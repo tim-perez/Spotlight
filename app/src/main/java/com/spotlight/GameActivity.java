@@ -58,7 +58,7 @@ public class GameActivity extends AppCompatActivity {
     private TextView textViewPhaseTitle, textViewTargetPlayer, textViewQuestion, textViewPassTo, textViewSelectionPrompt, textViewReviewInstructions;
     private LinearLayout layoutAnswerInput, layoutSelection, layoutPassDevice, layoutResults;
     private EditText editTextAnswer;
-    private Button buttonSubmitAnswer, buttonReady, buttonAction;
+    private Button buttonSubmitAnswer, buttonReady, buttonAction, buttonScoreSheet, buttonLogs;
     private RecyclerView recyclerViewChoices, recyclerViewResults;
     private View buttonLeave;
 
@@ -193,6 +193,7 @@ public class GameActivity extends AppCompatActivity {
         Map<String, String> votes = room.getVotes();
         String spotlightId = room.getSpotlightPlayerId();
         String spotlightAnswer = guesses.get(spotlightId);
+        List<String> logs = new ArrayList<>();
 
         if (spotlightAnswer == null) return;
 
@@ -211,36 +212,60 @@ public class GameActivity extends AppCompatActivity {
             // Rule: +4 for matching players, 0 for everyone else (including spotlight)
             for (String pid : matchingPlayerIds) {
                 Player p = playersMap.get(pid);
-                if (p != null) p.addScore(4);
+                if (p != null) {
+                    p.addScore(4);
+                    logs.add(p.getName() + " matched the Spotlight's answer! +4");
+                }
             }
+            logs.add("Round ended immediately due to a match.");
         } else {
             // No matches, process votes
             int spotlightPoints = 0;
+            Map<String, Integer> authorBonuses = new HashMap<>();
+
             for (Map.Entry<String, String> entry : votes.entrySet()) {
                 String voterId = entry.getKey();
                 String votedAnswer = entry.getValue();
+                Player voter = playersMap.get(voterId);
+                if (voter == null) continue;
 
                 if (votedAnswer.equalsIgnoreCase(spotlightAnswer)) {
                     // Rule: +2 for correct guesser
-                    Player voter = playersMap.get(voterId);
-                    if (voter != null) voter.addScore(2);
+                    voter.addScore(2);
                     // Rule: +1 for spotlight for each correct guess
                     spotlightPoints += 1;
+                    logs.add(voter.getName() + " correctly voted for the Spotlight! +2");
                 } else {
                     // Rule: +1 for each player whose answer is selected instead of the spotlight's
                     for (Map.Entry<String, String> gEntry : guesses.entrySet()) {
                         String authorId = gEntry.getKey();
                         String authoredAnswer = gEntry.getValue();
                         if (!authorId.equals(spotlightId) && authoredAnswer.equalsIgnoreCase(votedAnswer)) {
+                            authorBonuses.put(authorId, authorBonuses.getOrDefault(authorId, 0) + 1);
                             Player author = playersMap.get(authorId);
-                            if (author != null) author.addScore(1);
+                            if (author != null) {
+                                logs.add(voter.getName() + " voted for " + author.getName() + "'s answer. " + author.getName() + " gets +1");
+                            }
                         }
                     }
                 }
             }
+
+            for (Map.Entry<String, Integer> bonus : authorBonuses.entrySet()) {
+                Player author = playersMap.get(bonus.getKey());
+                if (author != null) author.addScore(bonus.getValue());
+            }
+
             Player spotlightPlayer = playersMap.get(spotlightId);
             if (spotlightPlayer != null) {
                 spotlightPlayer.addScore(spotlightPoints);
+                if (spotlightPoints > 0) {
+                    logs.add(spotlightPlayer.getName() + " received " + spotlightPoints + " point(s) from correct guesses.");
+                }
+            }
+            
+            if (logs.isEmpty()) {
+                logs.add("No points were awarded this round.");
             }
         }
 
@@ -256,6 +281,7 @@ public class GameActivity extends AppCompatActivity {
         // Atomic update to prevent race conditions and multiple triggers
         Map<String, Object> updates = new HashMap<>();
         updates.put("players", playersMap);
+        updates.put("logs", logs);
         if (gameOver) {
             updates.put("status", "FINISHED");
         } else {
@@ -458,9 +484,14 @@ public class GameActivity extends AppCompatActivity {
         buttonReady = findViewById(R.id.buttonReady);
         buttonAction = findViewById(R.id.buttonAction);
         buttonLeave = findViewById(R.id.buttonLeave);
+        buttonScoreSheet = findViewById(R.id.buttonScoreSheet);
+        buttonLogs = findViewById(R.id.buttonLogs);
 
         recyclerViewChoices = findViewById(R.id.recyclerViewChoices);
         recyclerViewResults = findViewById(R.id.recyclerViewResults);
+
+        buttonScoreSheet.setOnClickListener(v -> showScoreSheet());
+        buttonLogs.setOnClickListener(v -> showLogs());
 
         buttonSubmitAnswer.setOnClickListener(v -> {
             if (isMultiplayer) {
@@ -538,6 +569,55 @@ public class GameActivity extends AppCompatActivity {
         currentQuestion = questionRepository.getRandomQuestion();
         roomRef.child("currentQuestion").setValue(currentQuestion.getText());
         roomRef.child("status").setValue("WAITING_FOR_ANSWERS");
+    }
+
+    private void showScoreSheet() {
+        if (players == null) return;
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("First to 25 points wins!\n\n");
+        
+        List<Player> sortedPlayers = new ArrayList<>(players);
+        Collections.sort(sortedPlayers, (p1, p2) -> Integer.compare(p2.getScore(), p1.getScore()));
+        
+        for (Player p : sortedPlayers) {
+            sb.append(p.getName()).append(": ").append(p.getScore()).append(" pts\n");
+        }
+        
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("Scoreboard")
+            .setMessage(sb.toString())
+            .setPositiveButton("OK", null)
+            .show();
+    }
+
+    private void showLogs() {
+        roomRef.child("logs").get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                List<String> logs = new ArrayList<>();
+                for (DataSnapshot ds : task.getResult().getChildren()) {
+                    logs.add(ds.getValue(String.class));
+                }
+                
+                if (logs.isEmpty()) {
+                    Toast.makeText(this, "No logs for this round yet.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                StringBuilder sb = new StringBuilder();
+                for (String log : logs) {
+                    sb.append("• ").append(log).append("\n");
+                }
+                
+                new android.app.AlertDialog.Builder(this)
+                    .setTitle("Round Logs")
+                    .setMessage(sb.toString())
+                    .setPositiveButton("OK", null)
+                    .show();
+            } else {
+                Toast.makeText(this, "Failed to load logs.", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showLeaveConfirmation() {
