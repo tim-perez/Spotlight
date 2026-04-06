@@ -1,8 +1,0 @@
-com.spotlight.app-pngs-0 /Users/timperez/Documents/GitHub/Spotlight/app/build/generated/res/pngs/debug
-com.spotlight.app-resValues-1 /Users/timperez/Documents/GitHub/Spotlight/app/build/generated/res/resValues/debug
-com.spotlight.app-updated_navigation_xml-2 /Users/timperez/Documents/GitHub/Spotlight/app/build/generated/updated_navigation_xml/debug
-com.spotlight.app-packageDebugResources-3 /Users/timperez/Documents/GitHub/Spotlight/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
-com.spotlight.app-packageDebugResources-4 /Users/timperez/Documents/GitHub/Spotlight/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
-com.spotlight.app-debug-5 /Users/timperez/Documents/GitHub/Spotlight/app/build/intermediates/merged_res/debug/mergeDebugResources
-com.spotlight.app-debug-6 /Users/timperez/Documents/GitHub/Spotlight/app/src/debug/res
-com.spotlight.app-main-7 /Users/timperez/Documents/GitHub/Spotlight/app/src/main/res
