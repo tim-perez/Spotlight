@@ -75,8 +75,8 @@ public class CreateRoomActivity extends AppCompatActivity {
         });
 
         buttonStartMultiplayer.setOnClickListener(v -> {
-            if (players.size() < 2) {
-                Toast.makeText(this, "Wait for more players", Toast.LENGTH_SHORT).show();
+            if (players.size() < 3) {
+                Toast.makeText(this, "Wait for at least 3 players to start", Toast.LENGTH_SHORT).show();
                 return;
             }
             // Update room status to IN_PROGRESS

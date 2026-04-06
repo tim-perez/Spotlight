@@ -10,6 +10,8 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -20,6 +22,7 @@ import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class JoinRoomActivity extends AppCompatActivity {
@@ -41,16 +44,12 @@ public class JoinRoomActivity extends AppCompatActivity {
         Button buttonJoin = findViewById(R.id.buttonJoin);
         TextView textViewStatus = findViewById(R.id.textViewStatus);
         View buttonBack = findViewById(R.id.buttonBack);
-        
-        RecyclerView recyclerViewPlayers = new RecyclerView(this);
-        recyclerViewPlayers.setId(View.generateViewId());
-        
-        adapter = new PlayerAdapter(players);
-        
-        // Find or add a container for the player list if needed, 
-        // but for now let's just use the status text as a toggle.
-        
         buttonBack.setOnClickListener(v -> finish());
+
+        RecyclerView recyclerViewPlayers = findViewById(R.id.recyclerViewJoinPlayers);
+        adapter = new PlayerAdapter(players);
+        recyclerViewPlayers.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewPlayers.setAdapter(adapter);
 
         buttonJoin.setOnClickListener(v -> {
             String name = editTextPlayerName.getText().toString().trim();
@@ -82,6 +81,7 @@ public class JoinRoomActivity extends AppCompatActivity {
                         findViewById(R.id.editTextRoomCode).setVisibility(View.GONE);
                         findViewById(R.id.buttonJoin).setVisibility(View.GONE);
                         findViewById(R.id.textViewStatus).setVisibility(View.VISIBLE);
+                        findViewById(R.id.recyclerViewJoinPlayers).setVisibility(View.VISIBLE);
                         
                         listenForPlayersAndStart();
                         Toast.makeText(JoinRoomActivity.this, "Joined Room. Waiting for host...", Toast.LENGTH_SHORT).show();

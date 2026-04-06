@@ -199,7 +199,29 @@ public class GameActivity extends AppCompatActivity {
         recyclerViewChoices.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewChoices.setAdapter(new AnswerChoiceAdapter(options, choice -> {
             roomRef.child("votes").child(playerId).setValue(choice);
+            if (isHost()) {
+                checkAndProgressToResults();
+            }
         }));
+    }
+
+    private void checkAndProgressToResults() {
+        roomRef.child("votes").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                // If all guessers have voted (all players minus spotlight)
+                long totalVoters = players.size() - 1;
+                long totalVotes = snapshot.getChildrenCount();
+
+                if (totalVotes >= totalVoters) {
+                    roomRef.child("status").setValue("RESULTS");
+                    roomRef.child("votes").removeEventListener(this);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
     private void showMultiplayerResultsUI(GameRoom room) {
@@ -259,6 +281,10 @@ public class GameActivity extends AppCompatActivity {
         roomRef.child("guesses").child(playerId).setValue(answer);
         editTextAnswer.setText("");
         
+        // Hide input immediately to show waiting state
+        layoutAnswerInput.setVisibility(View.GONE);
+        textViewQuestion.setText("Waiting for others...");
+        
         // If host, check if everyone has answered to move to VOTING
         if (isHost()) {
             checkAndProgressToVoting();
@@ -266,14 +292,20 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void checkAndProgressToVoting() {
-        roomRef.addListenerForSingleValueEvent(new ValueEventListener() {
+        roomRef.child("guesses").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                GameRoom room = snapshot.getValue(GameRoom.class);
-                if (room != null && room.getGuesses().size() == room.getPlayers().size()) {
+                // If everyone has guessed, change the status to VOTING
+                long totalPlayers = players.size();
+                long totalGuesses = snapshot.getChildrenCount();
+                
+                if (totalGuesses >= totalPlayers) {
                     roomRef.child("status").setValue("VOTING");
+                    // Important: remove the listener after it triggers once
+                    roomRef.child("guesses").removeEventListener(this);
                 }
             }
+
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -285,8 +317,8 @@ public class GameActivity extends AppCompatActivity {
         roomRef.child("votes").removeValue();
         
         // Find next spotlight
-        int nextIndex = (spotlightPlayerIndex + 1) % players.size();
-        roomRef.child("spotlightPlayerId").setValue(players.get(nextIndex).getId());
+        spotlightPlayerIndex = (spotlightPlayerIndex + 1) % players.size();
+        roomRef.child("spotlightPlayerId").setValue(players.get(spotlightPlayerIndex).getId());
         
         currentQuestion = questionRepository.getRandomQuestion();
         roomRef.child("currentQuestion").setValue(currentQuestion.getText());
