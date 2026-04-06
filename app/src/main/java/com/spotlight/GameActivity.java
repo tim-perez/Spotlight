@@ -53,6 +53,7 @@ public class GameActivity extends AppCompatActivity {
     private EditText editTextAnswer;
     private Button buttonSubmitAnswer, buttonReady, buttonAction;
     private RecyclerView recyclerViewChoices, recyclerViewResults;
+    private View buttonLeave;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +88,7 @@ public class GameActivity extends AppCompatActivity {
         buttonSubmitAnswer = findViewById(R.id.buttonSubmitAnswer);
         buttonReady = findViewById(R.id.buttonReady);
         buttonAction = findViewById(R.id.buttonAction);
+        buttonLeave = findViewById(R.id.buttonLeave);
 
         recyclerViewChoices = findViewById(R.id.recyclerViewChoices);
         recyclerViewResults = findViewById(R.id.recyclerViewResults);
@@ -94,6 +96,16 @@ public class GameActivity extends AppCompatActivity {
         buttonSubmitAnswer.setOnClickListener(v -> handleSubmitAnswer());
         buttonReady.setOnClickListener(v -> handleReady());
         buttonAction.setOnClickListener(v -> handleAction());
+        buttonLeave.setOnClickListener(v -> showLeaveConfirmation());
+    }
+
+    private void showLeaveConfirmation() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Leave Game")
+                .setMessage("Are you sure you want to leave the room?")
+                .setPositiveButton("Leave", (dialog, which) -> finish())
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void startNewRound() {

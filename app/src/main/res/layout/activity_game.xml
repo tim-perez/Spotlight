@@ -8,6 +8,15 @@
     tools:context=".GameActivity">
 
     <!-- Header info -->
+    <ImageButton
+        android:id="@+id/buttonLeave"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <TextView
         android:id="@+id/textViewPhaseTitle"
         android:layout_width="wrap_content"
@@ -16,8 +25,9 @@
         android:textSize="24sp"
         android:textStyle="bold"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintStart_toEndOf="@id/buttonLeave"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="48dp" />
 
     <TextView
         android:id="@+id/textViewTargetPlayer"

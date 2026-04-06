@@ -36,6 +36,9 @@ public class CreateRoomActivity extends AppCompatActivity {
         TextView textViewRoomCodeDisplay = findViewById(R.id.textViewRoomCodeDisplay);
         RecyclerView recyclerViewRoomPlayers = findViewById(R.id.recyclerViewRoomPlayers);
         Button buttonStartMultiplayer = findViewById(R.id.buttonStartMultiplayer);
+        View buttonBack = findViewById(R.id.buttonBack);
+
+        buttonBack.setOnClickListener(v -> finish());
 
         adapter = new PlayerAdapter(players);
         recyclerViewRoomPlayers.setLayoutManager(new LinearLayoutManager(this));

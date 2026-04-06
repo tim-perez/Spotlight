@@ -26,6 +26,9 @@ public class JoinRoomActivity extends AppCompatActivity {
         EditText editTextRoomCode = findViewById(R.id.editTextRoomCode);
         Button buttonJoin = findViewById(R.id.buttonJoin);
         TextView textViewStatus = findViewById(R.id.textViewStatus);
+        View buttonBack = findViewById(R.id.buttonBack);
+
+        buttonBack.setOnClickListener(v -> finish());
 
         buttonJoin.setOnClickListener(v -> {
             String name = editTextPlayerName.getText().toString().trim();
