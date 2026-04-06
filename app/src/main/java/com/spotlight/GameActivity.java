@@ -139,8 +139,10 @@ public class GameActivity extends AppCompatActivity {
 
             case PASS_TO_GUESSER:
                 layoutPassDevice.setVisibility(View.VISIBLE);
-                Player guesser = getNextGuesser();
-                textViewPassTo.setText("Pass the device to " + guesser.getName());
+                if (currentGuesserIndex != -1) {
+                    Player guesser = players.get(currentGuesserIndex);
+                    textViewPassTo.setText("Pass the device to " + guesser.getName());
+                }
                 textViewPhaseTitle.setText("Guessing Phase");
                 textViewTargetPlayer.setText("");
                 textViewQuestion.setText("Try to guess " + spotlightPlayer.getName() + "'s answer!");
@@ -148,12 +150,14 @@ public class GameActivity extends AppCompatActivity {
 
             case GUESSER_INPUT:
                 layoutAnswerInput.setVisibility(View.VISIBLE);
-                Player currentGuesser = players.get(currentGuesserIndex);
-                textViewPhaseTitle.setText("Guessing Phase");
-                textViewTargetPlayer.setText(currentGuesser.getName() + "'s Turn");
-                textViewQuestion.setText(currentQuestion.getText());
-                editTextAnswer.setText("");
-                editTextAnswer.setHint("What did " + spotlightPlayer.getName() + " write?");
+                if (currentGuesserIndex != -1) {
+                    Player currentGuesser = players.get(currentGuesserIndex);
+                    textViewPhaseTitle.setText("Guessing Phase");
+                    textViewTargetPlayer.setText(currentGuesser.getName() + "'s Turn");
+                    textViewQuestion.setText(currentQuestion.getText());
+                    editTextAnswer.setText("");
+                    editTextAnswer.setHint("What did " + spotlightPlayer.getName() + " write?");
+                }
                 break;
 
             case VOTING_PASS:
@@ -169,8 +173,12 @@ public class GameActivity extends AppCompatActivity {
                 buttonAction.setVisibility(View.VISIBLE);
                 buttonAction.setText("Next Voter / Reveal");
                 textViewPhaseTitle.setText("Voting Phase");
-                // We'll handle individual voting internally
-                prepareVotingUI();
+                if (currentGuesserIndex != -1) {
+                    Player voter = players.get(currentGuesserIndex);
+                    textViewTargetPlayer.setText(voter.getName() + "'s Vote");
+                    textViewSelectionPrompt.setText("Which answer did " + spotlightPlayer.getName() + " write?");
+                    prepareVotingUI();
+                }
                 break;
 
             case RESULTS:
@@ -183,16 +191,16 @@ public class GameActivity extends AppCompatActivity {
         }
     }
 
-    private Player getNextGuesser() {
-        int nextIndex = (currentGuesserIndex == -1) ? 0 : currentGuesserIndex + 1;
+    private boolean findNextGuesser() {
+        int nextIndex = currentGuesserIndex + 1;
         while (nextIndex < players.size()) {
             if (nextIndex != spotlightPlayerIndex) {
                 currentGuesserIndex = nextIndex;
-                return players.get(nextIndex);
+                return true;
             }
             nextIndex++;
         }
-        return null;
+        return false;
     }
 
     private void handleReady() {
@@ -203,7 +211,11 @@ public class GameActivity extends AppCompatActivity {
         } else if (currentPhase == Phase.VOTING_PASS) {
             setupVotingOptions();
             currentGuesserIndex = -1;
-            startNextVoter();
+            if (findNextGuesser()) {
+                setPhase(Phase.VOTING);
+            } else {
+                setPhase(Phase.RESULTS);
+            }
         }
     }
 
@@ -217,19 +229,21 @@ public class GameActivity extends AppCompatActivity {
         if (currentPhase == Phase.SPOTLIGHT_INPUT) {
             secretAnswer = answer;
             currentGuesserIndex = -1;
-            setPhase(Phase.PASS_TO_GUESSER);
+            if (findNextGuesser()) {
+                setPhase(Phase.PASS_TO_GUESSER);
+            } else {
+                setPhase(Phase.RESULTS);
+            }
         } else if (currentPhase == Phase.GUESSER_INPUT) {
             Player currentGuesser = players.get(currentGuesserIndex);
             playerGuesses.put(currentGuesser, answer);
             
-            // Check for exact match (case insensitive)
             if (answer.equalsIgnoreCase(secretAnswer)) {
                 handleImmediateWin();
             } else {
-                if (getNextGuesser() != null) {
+                if (findNextGuesser()) {
                     setPhase(Phase.PASS_TO_GUESSER);
                 } else {
-                    // Everyone has guessed, no one got it exactly
                     setPhase(Phase.VOTING_PASS);
                 }
             }
@@ -237,13 +251,8 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void handleImmediateWin() {
-        // Find everyone who guessed correctly this round
-        // Although in this turn-based flow, we might stop at the first one.
-        // User said: "If the player in the "Spotlight" notices someone guess their answer correctly, the round automatically ends"
-        // Let's award +4 to the current guesser and move to results.
         Player winner = players.get(currentGuesserIndex);
         winner.addScore(4);
-        
         Toast.makeText(this, winner.getName() + " guessed it EXACTLY! +4 points", Toast.LENGTH_LONG).show();
         setPhase(Phase.RESULTS);
     }
@@ -257,18 +266,6 @@ public class GameActivity extends AppCompatActivity {
             }
         }
         Collections.shuffle(allAnswerOptions);
-    }
-
-    private void startNextVoter() {
-        Player nextVoter = getNextGuesser();
-        if (nextVoter != null) {
-            setPhase(Phase.VOTING);
-            textViewTargetPlayer.setText(nextVoter.getName() + "'s Vote");
-            textViewSelectionPrompt.setText("Which answer did " + players.get(spotlightPlayerIndex).getName() + " write?");
-        } else {
-            calculateVotingScores();
-            setPhase(Phase.RESULTS);
-        }
     }
 
     private void prepareVotingUI() {
@@ -287,9 +284,15 @@ public class GameActivity extends AppCompatActivity {
                 Toast.makeText(this, "Please select an answer", Toast.LENGTH_SHORT).show();
                 return;
             }
-            startNextVoter();
+            if (findNextGuesser()) {
+                setPhase(Phase.VOTING);
+            } else {
+                calculateVotingScores();
+                setPhase(Phase.RESULTS);
+            }
         } else if (currentPhase == Phase.RESULTS) {
             if (checkForWinner()) {
+                // Return to main menu or setup
                 finish();
             } else {
                 spotlightPlayerIndex = (spotlightPlayerIndex + 1) % players.size();
@@ -305,19 +308,12 @@ public class GameActivity extends AppCompatActivity {
             String vote = entry.getValue();
 
             if (vote.equalsIgnoreCase(secretAnswer)) {
-                // Correct guess: +2 for picker
                 voter.addScore(2);
-                // Spotlight gets +1 for each correct guess
                 spotlight.addScore(1);
             } else {
-                // Picker picked someone else's answer
-                // Find who wrote this decoy answer
                 for (Map.Entry<Player, String> guessEntry : playerGuesses.entrySet()) {
                     if (guessEntry.getValue().equalsIgnoreCase(vote)) {
-                        // +1 for the person who wrote the decoy (if it's not the spotlight, which it isn't here)
                         guessEntry.getKey().addScore(1);
-                        // Assuming only one person gets points if multiple wrote the same guess? 
-                        // Usually in these games, all who wrote it get a point.
                     }
                 }
             }
@@ -326,10 +322,8 @@ public class GameActivity extends AppCompatActivity {
 
     private void showResultsUI() {
         recyclerViewResults.setLayoutManager(new LinearLayoutManager(this));
-        // Simple list of players and scores for now
         ResultAdapter adapter = new ResultAdapter(players);
         recyclerViewResults.setAdapter(adapter);
-        
         textViewQuestion.setText("The secret answer was: " + secretAnswer);
     }
 
