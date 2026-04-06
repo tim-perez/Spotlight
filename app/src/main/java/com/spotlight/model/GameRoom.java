@@ -41,7 +41,7 @@ public class GameRoom implements Serializable {
     }
 
     public Map<String, Player> getPlayers() {
-        return players;
+        return players == null ? new HashMap<>() : players;
     }
 
     public void setPlayers(Map<String, Player> players) {
@@ -73,7 +73,7 @@ public class GameRoom implements Serializable {
     }
 
     public Map<String, String> getGuesses() {
-        return guesses;
+        return guesses == null ? new HashMap<>() : guesses;
     }
 
     public void setGuesses(Map<String, String> guesses) {
@@ -81,7 +81,7 @@ public class GameRoom implements Serializable {
     }
 
     public Map<String, String> getVotes() {
-        return votes;
+        return votes == null ? new HashMap<>() : votes;
     }
 
     public void setVotes(Map<String, String> votes) {

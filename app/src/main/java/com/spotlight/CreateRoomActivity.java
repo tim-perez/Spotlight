@@ -87,6 +87,7 @@ public class CreateRoomActivity extends AppCompatActivity {
             intent.putExtra("isMultiplayer", true);
             intent.putExtra("roomCode", roomCode);
             intent.putExtra("playerId", playerId);
+            intent.putExtra("hostId", playerId);
             startActivity(intent);
         });
     }

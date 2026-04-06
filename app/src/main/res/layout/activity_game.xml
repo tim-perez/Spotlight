@@ -102,10 +102,21 @@
 
         <TextView
             android:id="@+id/textViewSelectionPrompt"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Pick the Spotlight player's answer:"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginBottom="8dp"
+            android:textStyle="bold"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/textViewReviewInstructions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Check mark = Matches your answer\nTrash can = Duplicate answer\n\nIf no duplicates or matches, click Start Voting."
+            android:layout_marginBottom="8dp"
+            android:textSize="14sp"
+            android:visibility="gone"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewChoices"

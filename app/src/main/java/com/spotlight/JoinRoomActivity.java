@@ -34,6 +34,8 @@ public class JoinRoomActivity extends AppCompatActivity {
     private PlayerAdapter adapter;
     private List<Player> players = new ArrayList<>();
 
+    private TextView textViewStatus;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,7 +44,7 @@ public class JoinRoomActivity extends AppCompatActivity {
         EditText editTextPlayerName = findViewById(R.id.editTextPlayerName);
         EditText editTextRoomCode = findViewById(R.id.editTextRoomCode);
         Button buttonJoin = findViewById(R.id.buttonJoin);
-        TextView textViewStatus = findViewById(R.id.textViewStatus);
+        textViewStatus = findViewById(R.id.textViewStatus);
         View buttonBack = findViewById(R.id.buttonBack);
         buttonBack.setOnClickListener(v -> finish());
 
@@ -53,7 +55,16 @@ public class JoinRoomActivity extends AppCompatActivity {
 
         buttonJoin.setOnClickListener(v -> {
             String name = editTextPlayerName.getText().toString().trim();
-            roomCode = editTextRoomCode.getText().toString().trim().toUpperCase();
+            String rawCode = editTextRoomCode.getText().toString().trim().toUpperCase();
+            
+            // Handle case where user might include "Room Code: " prefix
+            if (rawCode.startsWith("ROOM CODE:")) {
+                roomCode = rawCode.replace("ROOM CODE:", "").trim();
+            } else if (rawCode.contains(":")) {
+                roomCode = rawCode.substring(rawCode.indexOf(":") + 1).trim();
+            } else {
+                roomCode = rawCode;
+            }
 
             if (name.isEmpty() || roomCode.isEmpty()) {
                 Toast.makeText(this, "Enter name and room code", Toast.LENGTH_SHORT).show();
@@ -66,13 +77,22 @@ public class JoinRoomActivity extends AppCompatActivity {
     }
 
     private void joinRoom(String name) {
+        textViewStatus.setVisibility(View.VISIBLE);
+        textViewStatus.setText("Searching for room: " + roomCode + "...");
+        
         DatabaseReference roomsRef = FirebaseDatabase.getInstance().getReference("rooms");
         roomsRef.child(roomCode).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!snapshot.exists()) {
+                    textViewStatus.setText("Room " + roomCode + " not found.");
+                    return;
+                }
+                
                 GameRoom room = snapshot.getValue(GameRoom.class);
                 if (room != null) {
                     if ("WAITING".equals(room.getStatus())) {
+                        textViewStatus.setText("Joining room...");
                         Player player = new Player(playerId, name);
                         roomsRef.child(roomCode).child("players").child(playerId).setValue(player);
                         
@@ -80,22 +100,20 @@ public class JoinRoomActivity extends AppCompatActivity {
                         findViewById(R.id.editTextPlayerName).setVisibility(View.GONE);
                         findViewById(R.id.editTextRoomCode).setVisibility(View.GONE);
                         findViewById(R.id.buttonJoin).setVisibility(View.GONE);
-                        findViewById(R.id.textViewStatus).setVisibility(View.VISIBLE);
                         findViewById(R.id.recyclerViewJoinPlayers).setVisibility(View.VISIBLE);
                         
                         listenForPlayersAndStart();
-                        Toast.makeText(JoinRoomActivity.this, "Joined Room. Waiting for host...", Toast.LENGTH_SHORT).show();
                     } else {
-                        Toast.makeText(JoinRoomActivity.this, "Game already in progress", Toast.LENGTH_SHORT).show();
+                        textViewStatus.setText("Game already in progress.");
                     }
                 } else {
-                    Toast.makeText(JoinRoomActivity.this, "Room not found", Toast.LENGTH_SHORT).show();
+                    textViewStatus.setText("Error reading room data.");
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(JoinRoomActivity.this, "Database Error", Toast.LENGTH_SHORT).show();
+                textViewStatus.setText("Database error: " + error.getMessage());
             }
         });
     }
@@ -107,7 +125,7 @@ public class JoinRoomActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 GameRoom room = snapshot.getValue(GameRoom.class);
                 if (room != null) {
-                    if ("IN_PROGRESS".equals(room.getStatus())) {
+                    if (!"WAITING".equals(room.getStatus())) {
                         roomRef.removeEventListener(this);
                         
                         Intent intent = new Intent(JoinRoomActivity.this, GameActivity.class);
@@ -115,6 +133,7 @@ public class JoinRoomActivity extends AppCompatActivity {
                         intent.putExtra("isMultiplayer", true);
                         intent.putExtra("roomCode", roomCode);
                         intent.putExtra("playerId", playerId);
+                        intent.putExtra("hostId", room.getHostId());
                         startActivity(intent);
                         finish();
                     } else if (room.getPlayers() != null) {

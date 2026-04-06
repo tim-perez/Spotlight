@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -13,17 +14,24 @@ import java.util.List;
 
 public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapter.ChoiceViewHolder> {
 
-    public interface OnChoiceSelectedListener {
+    public interface OnChoiceActionListener {
         void onChoiceSelected(String choice);
+        default void onMatchClicked(String choice) {}
+        default void onDeleteClicked(String choice) {}
     }
 
     private List<String> choices;
-    private OnChoiceSelectedListener listener;
+    private OnChoiceActionListener listener;
     private int selectedPosition = -1;
+    private boolean isReviewMode = false;
 
-    public AnswerChoiceAdapter(List<String> choices, OnChoiceSelectedListener listener) {
+    public AnswerChoiceAdapter(List<String> choices, OnChoiceActionListener listener) {
         this.choices = choices;
         this.listener = listener;
+    }
+
+    public void setReviewMode(boolean reviewMode) {
+        this.isReviewMode = reviewMode;
     }
 
     @NonNull
@@ -38,19 +46,32 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
         String choice = choices.get(position);
         holder.textViewChoice.setText(choice);
         
-        if (selectedPosition == position) {
-            holder.itemView.setBackgroundColor(Color.LTGRAY);
-        } else {
+        if (isReviewMode) {
+            holder.buttonMatch.setVisibility(View.VISIBLE);
+            holder.buttonDelete.setVisibility(View.VISIBLE);
+            holder.itemView.setOnClickListener(null);
+            
+            holder.buttonMatch.setOnClickListener(v -> listener.onMatchClicked(choice));
+            holder.buttonDelete.setOnClickListener(v -> listener.onDeleteClicked(choice));
             holder.itemView.setBackgroundColor(Color.WHITE);
-        }
+        } else {
+            holder.buttonMatch.setVisibility(View.GONE);
+            holder.buttonDelete.setVisibility(View.GONE);
+            
+            if (selectedPosition == position) {
+                holder.itemView.setBackgroundColor(Color.LTGRAY);
+            } else {
+                holder.itemView.setBackgroundColor(Color.WHITE);
+            }
 
-        holder.itemView.setOnClickListener(v -> {
-            int previousSelected = selectedPosition;
-            selectedPosition = holder.getAdapterPosition();
-            notifyItemChanged(previousSelected);
-            notifyItemChanged(selectedPosition);
-            listener.onChoiceSelected(choice);
-        });
+            holder.itemView.setOnClickListener(v -> {
+                int previousSelected = selectedPosition;
+                selectedPosition = holder.getAdapterPosition();
+                notifyItemChanged(previousSelected);
+                notifyItemChanged(selectedPosition);
+                listener.onChoiceSelected(choice);
+            });
+        }
     }
 
     @Override
@@ -60,10 +81,14 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
 
     static class ChoiceViewHolder extends RecyclerView.ViewHolder {
         TextView textViewChoice;
+        ImageButton buttonMatch;
+        ImageButton buttonDelete;
 
         public ChoiceViewHolder(@NonNull View itemView) {
             super(itemView);
             textViewChoice = itemView.findViewById(R.id.textViewChoice);
+            buttonMatch = itemView.findViewById(R.id.buttonMatch);
+            buttonDelete = itemView.findViewById(R.id.buttonDelete);
         }
     }
 }
