@@ -14,11 +14,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-//import com.google.firebase.database.DataSnapshot;
-//import com.google.firebase.database.DatabaseError;
-//import com.google.firebase.database.DatabaseReference;
-//import com.google.firebase.database.FirebaseDatabase;
-//import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 
@@ -33,8 +33,8 @@ public class CreateRoomActivity extends AppCompatActivity {
     private PlayerAdapter adapter;
     private String roomCode;
     private String playerId;
-//    private DatabaseReference roomRef;
-//    private ValueEventListener roomListener;
+    private DatabaseReference roomRef;
+    private ValueEventListener roomListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +65,7 @@ public class CreateRoomActivity extends AppCompatActivity {
             playerId = UUID.randomUUID().toString();
             roomCode = generateRoomCode();
             
-            // createRoomInFirebase(name);
+            createRoomInFirebase(name);
 
             textViewRoomCodeDisplay.setText("Room Code: " + roomCode);
             layoutRoomInfo.setVisibility(View.VISIBLE);
@@ -80,7 +80,7 @@ public class CreateRoomActivity extends AppCompatActivity {
                 return;
             }
             // Update room status to IN_PROGRESS
-            // roomRef.child("status").setValue("IN_PROGRESS");
+            roomRef.child("status").setValue("IN_PROGRESS");
             
             Intent intent = new Intent(this, GameActivity.class);
             intent.putExtra("players", (ArrayList<Player>) players);
@@ -92,7 +92,7 @@ public class CreateRoomActivity extends AppCompatActivity {
     }
 
     private void createRoomInFirebase(String hostName) {
-/*        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
         roomRef = database.getReference("rooms").child(roomCode);
 
         Player host = new Player(playerId, hostName);
@@ -100,6 +100,7 @@ public class CreateRoomActivity extends AppCompatActivity {
         room.getPlayers().put(playerId, host);
 
         roomRef.setValue(room);
+        adapter.setHostId(playerId);
 
         // Listen for players joining
         roomListener = roomRef.addValueEventListener(new ValueEventListener() {
@@ -117,15 +118,15 @@ public class CreateRoomActivity extends AppCompatActivity {
             public void onCancelled(@NonNull DatabaseError error) {
                 Toast.makeText(CreateRoomActivity.this, "Database Error", Toast.LENGTH_SHORT).show();
             }
-        });*/
+        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-/*        if (roomRef != null && roomListener != null) {
+        if (roomRef != null && roomListener != null) {
             roomRef.removeEventListener(roomListener);
-        }*/
+        }
     }
 
     private String generateRoomCode() {

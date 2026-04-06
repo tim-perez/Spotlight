@@ -15,9 +15,15 @@ import java.util.List;
 public class PlayerAdapter extends RecyclerView.Adapter<PlayerAdapter.PlayerViewHolder> {
 
     private List<Player> playerList;
+    private String hostId;
 
     public PlayerAdapter(List<Player> playerList) {
         this.playerList = playerList;
+    }
+
+    public void setHostId(String hostId) {
+        this.hostId = hostId;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -30,7 +36,11 @@ public class PlayerAdapter extends RecyclerView.Adapter<PlayerAdapter.PlayerView
     @Override
     public void onBindViewHolder(@NonNull PlayerViewHolder holder, int position) {
         Player player = playerList.get(position);
-        holder.textViewName.setText(player.getName());
+        String displayName = player.getName();
+        if (hostId != null && hostId.equals(player.getId())) {
+            displayName += " (Host)";
+        }
+        holder.textViewName.setText(displayName);
     }
 
     @Override
