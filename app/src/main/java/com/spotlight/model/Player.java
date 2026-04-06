@@ -12,6 +12,12 @@ public class Player implements Serializable {
         // Required for Firebase
     }
 
+    public Player(String name) {
+        this.id = java.util.UUID.randomUUID().toString();
+        this.name = name;
+        this.score = 0;
+    }
+
     public Player(String id, String name) {
         this.id = id;
         this.name = name;

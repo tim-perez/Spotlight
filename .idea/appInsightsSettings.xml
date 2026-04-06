@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.spotlight" />
+                  <option name="mobileSdkAppId" value="1:309304895121:android:0917a6fe892933f4220130" />
+                  <option name="projectId" value="spotlight-firebase-fa52d" />
+                  <option name="projectNumber" value="309304895121" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
