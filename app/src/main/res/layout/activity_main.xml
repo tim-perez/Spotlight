@@ -4,42 +4,99 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#121212"
     tools:context=".MainActivity">
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/animationViewBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:lottie_rawRes="@raw/bg_animation"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"
+        android:scaleType="centerCrop"
+        android:alpha="0.3"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/textViewTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Spotlight"
-        android:textSize="48sp"
-        android:textStyle="bold"
-        android:textColor="@color/black"
+        android:text="SPOTLIGHT"
+        android:textSize="56sp"
+        android:fontFamily="sans-serif-black"
+        android:letterSpacing="0.1"
+        android:textColor="#FFD600"
         app:layout_constraintBottom_toTopOf="@+id/buttonPassAndPlay"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_chainStyle="packed" />
 
-    <Button
-        android:id="@+id/buttonPassAndPlay"
-        android:layout_width="250dp"
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Pass and Play"
-        android:layout_marginTop="48dp"
+        android:text="THE PARTY GAME"
+        android:textColor="#FFFFFF"
+        android:letterSpacing="0.3"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/textViewTitle"
+        app:layout_constraintStart_toStartOf="@id/textViewTitle"
+        app:layout_constraintEnd_toEndOf="@id/textViewTitle" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/buttonPassAndPlay"
+        android:layout_width="280dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="80dp"
+        app:cardBackgroundColor="#FFD600"
+        app:cardCornerRadius="30dp"
+        app:cardElevation="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
         app:layout_constraintBottom_toTopOf="@+id/buttonMultiplayer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewTitle" />
+        app:layout_constraintTop_toBottomOf="@+id/textViewTitle">
 
-    <Button
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="PASS AND PLAY"
+            android:textColor="#121212"
+            android:textStyle="bold"
+            android:textSize="18sp" />
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
         android:id="@+id/buttonMultiplayer"
-        android:layout_width="250dp"
-        android:layout_height="wrap_content"
-        android:text="Multiplayer"
-        android:layout_marginTop="16dp"
+        android:layout_width="280dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="20dp"
+        app:cardBackgroundColor="#333333"
+        app:cardCornerRadius="30dp"
+        app:cardElevation="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/buttonPassAndPlay" />
+        app:layout_constraintTop_toBottomOf="@+id/buttonPassAndPlay">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="ONLINE MULTIPLAYER"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="18sp" />
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

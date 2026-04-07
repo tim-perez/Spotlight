@@ -757,44 +757,81 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void showSpotlightAnimation() {
-        animationViewSpotlight.setVisibility(View.VISIBLE);
-        animationViewSpotlight.playAnimation();
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        if (animationViewSpotlight == null) return;
+        try {
+            animationViewSpotlight.setVisibility(View.VISIBLE);
+            animationViewSpotlight.playAnimation();
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (animationViewSpotlight != null) {
+                    animationViewSpotlight.setVisibility(View.GONE);
+                    animationViewSpotlight.cancelAnimation();
+                }
+            }, 3000);
+        } catch (Exception e) {
             animationViewSpotlight.setVisibility(View.GONE);
-            animationViewSpotlight.cancelAnimation();
-        }, 3000);
+        }
     }
 
     private void showConfettiAnimation() {
-        animationViewConfetti.setVisibility(View.VISIBLE);
-        animationViewConfetti.playAnimation();
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        if (animationViewConfetti == null) return;
+        try {
+            animationViewConfetti.setVisibility(View.VISIBLE);
+            animationViewConfetti.playAnimation();
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (animationViewConfetti != null) {
+                    animationViewConfetti.setVisibility(View.GONE);
+                }
+            }, 5000);
+        } catch (Exception e) {
             animationViewConfetti.setVisibility(View.GONE);
-        }, 5000);
+        }
     }
 
     private void showRevealAnimation(Runnable onComplete) {
-        animationViewReveal.setVisibility(View.VISIBLE);
-        animationViewReveal.playAnimation();
-        playRevealSound();
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        if (animationViewReveal == null) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+        try {
+            animationViewReveal.setVisibility(View.VISIBLE);
+            animationViewReveal.playAnimation();
+            playRevealSound();
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (animationViewReveal != null) {
+                    animationViewReveal.setVisibility(View.GONE);
+                }
+                if (onComplete != null) onComplete.run();
+            }, 3000);
+        } catch (Exception e) {
             animationViewReveal.setVisibility(View.GONE);
             if (onComplete != null) onComplete.run();
-        }, 3000);
+        }
     }
 
     private void playCorrectSound() {
-        if (mediaPlayerCorrect == null) {
-            mediaPlayerCorrect = MediaPlayer.create(this, R.raw.correct);
+        try {
+            if (mediaPlayerCorrect == null) {
+                mediaPlayerCorrect = MediaPlayer.create(this, R.raw.correct);
+            }
+            if (mediaPlayerCorrect != null) {
+                mediaPlayerCorrect.start();
+            }
+        } catch (Exception e) {
+            // Sound failed to play
         }
-        mediaPlayerCorrect.start();
     }
 
     private void playRevealSound() {
-        if (mediaPlayerReveal == null) {
-            mediaPlayerReveal = MediaPlayer.create(this, R.raw.drumroll);
+        try {
+            if (mediaPlayerReveal == null) {
+                mediaPlayerReveal = MediaPlayer.create(this, R.raw.drumroll);
+            }
+            if (mediaPlayerReveal != null) {
+                mediaPlayerReveal.start();
+            }
+        } catch (Exception e) {
+            // Sound failed to play
         }
-        mediaPlayerReveal.start();
     }
 
     @Override
