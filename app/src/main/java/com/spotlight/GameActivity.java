@@ -87,7 +87,7 @@ public class GameActivity extends AppCompatActivity {
             });
         }
 
-        questionRepository = new QuestionRepository();
+        questionRepository = new QuestionRepository(this);
         initViews();
         
         if (isMultiplayer) {

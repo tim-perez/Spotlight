@@ -39,7 +39,7 @@ public class GameSetupActivity extends AppCompatActivity {
         spinnerCategory = findViewById(R.id.spinnerCategory);
         View buttonBack = findViewById(R.id.buttonBack);
 
-        questionRepository = new QuestionRepository();
+        questionRepository = new QuestionRepository(this);
         ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, questionRepository.getCategories());
         categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCategory.setAdapter(categoryAdapter);
