@@ -16,14 +16,15 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
 
     public interface OnChoiceActionListener {
         void onChoiceSelected(String choice);
-        default void onMatchClicked(String choice) {}
-        default void onDeleteClicked(String choice) {}
+        default void onMatchClicked(String choice, int position) {}
+        default void onDeleteClicked(int position) {}
     }
 
     private List<String> choices;
     private OnChoiceActionListener listener;
     private int selectedPosition = -1;
     private boolean isReviewMode = false;
+    private java.util.Set<Integer> matchedPositions = new java.util.HashSet<>();
 
     public AnswerChoiceAdapter(List<String> choices, OnChoiceActionListener listener) {
         this.choices = choices;
@@ -32,6 +33,11 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
 
     public void setReviewMode(boolean reviewMode) {
         this.isReviewMode = reviewMode;
+    }
+
+    public void setMatchedPositions(java.util.Set<Integer> matchedPositions) {
+        this.matchedPositions = matchedPositions;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -51,9 +57,16 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
             holder.buttonDelete.setVisibility(View.VISIBLE);
             holder.itemView.setOnClickListener(null);
             
-            holder.buttonMatch.setOnClickListener(v -> listener.onMatchClicked(choice));
-            holder.buttonDelete.setOnClickListener(v -> listener.onDeleteClicked(choice));
-            holder.itemView.setBackgroundColor(Color.WHITE);
+            if (matchedPositions.contains(position)) {
+                holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9")); // Light green
+                holder.buttonMatch.setImageResource(android.R.drawable.checkbox_on_background);
+            } else {
+                holder.itemView.setBackgroundColor(Color.WHITE);
+                holder.buttonMatch.setImageResource(android.R.drawable.checkbox_off_background);
+            }
+
+            holder.buttonMatch.setOnClickListener(v -> listener.onMatchClicked(choice, holder.getAdapterPosition()));
+            holder.buttonDelete.setOnClickListener(v -> listener.onDeleteClicked(holder.getAdapterPosition()));
         } else {
             holder.buttonMatch.setVisibility(View.GONE);
             holder.buttonDelete.setVisibility(View.GONE);

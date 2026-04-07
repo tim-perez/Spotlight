@@ -560,15 +560,30 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void startNextMultiplayerRound() {
+        if (!isHost()) return;
+
+        // Reset round-specific data
         roomRef.child("guesses").removeValue();
         roomRef.child("votes").removeValue();
-        
+        roomRef.child("logs").removeValue();
+
+        // Move to next spotlight player
         spotlightPlayerIndex = (spotlightPlayerIndex + 1) % players.size();
-        roomRef.child("spotlightPlayerId").setValue(players.get(spotlightPlayerIndex).getId());
-        
-        currentQuestion = questionRepository.getRandomQuestion();
-        roomRef.child("currentQuestion").setValue(currentQuestion.getText());
-        roomRef.child("status").setValue("WAITING_FOR_ANSWERS");
+        String nextSpotlightId = players.get(spotlightPlayerIndex).getId();
+
+        // Get a new question based on the selected category
+        String category = getIntent().getStringExtra("category");
+        if (category != null) {
+            questionRepository.filterByCategory(category);
+        }
+        Question nextQuestion = questionRepository.getRandomQuestion();
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("spotlightPlayerId", nextSpotlightId);
+        updates.put("currentQuestion", nextQuestion.getText());
+        updates.put("status", "WAITING_FOR_ANSWERS");
+
+        roomRef.updateChildren(updates);
     }
 
     private void showScoreSheet() {
@@ -592,32 +607,40 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void showLogs() {
-        roomRef.child("logs").get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                List<String> logs = new ArrayList<>();
-                for (DataSnapshot ds : task.getResult().getChildren()) {
-                    logs.add(ds.getValue(String.class));
+        if (isMultiplayer) {
+            roomRef.child("logs").get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    List<String> logs = new ArrayList<>();
+                    for (DataSnapshot ds : task.getResult().getChildren()) {
+                        logs.add(ds.getValue(String.class));
+                    }
+                    
+                    displayLogsDialog(logs);
+                } else {
+                    Toast.makeText(this, "Failed to load logs.", Toast.LENGTH_SHORT).show();
                 }
-                
-                if (logs.isEmpty()) {
-                    Toast.makeText(this, "No logs for this round yet.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                
-                StringBuilder sb = new StringBuilder();
-                for (String log : logs) {
-                    sb.append("• ").append(log).append("\n");
-                }
-                
-                new android.app.AlertDialog.Builder(this)
-                    .setTitle("Round Logs")
-                    .setMessage(sb.toString())
-                    .setPositiveButton("OK", null)
-                    .show();
-            } else {
-                Toast.makeText(this, "Failed to load logs.", Toast.LENGTH_SHORT).show();
-            }
-        });
+            });
+        } else {
+            displayLogsDialog(localLogs);
+        }
+    }
+
+    private void displayLogsDialog(List<String> logs) {
+        if (logs == null || logs.isEmpty()) {
+            Toast.makeText(this, "No logs for this round yet.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        for (String log : logs) {
+            sb.append("• ").append(log).append("\n");
+        }
+        
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("Round Logs")
+            .setMessage(sb.toString())
+            .setPositiveButton("OK", null)
+            .show();
     }
 
     private void showLeaveConfirmation() {
@@ -634,9 +657,324 @@ public class GameActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void startNewRoundLocal() { }
-    private void setPhase(Phase phase) { }
-    private void handleReady() { }
-    private void handleSubmitAnswer() { }
-    private void handleAction() { }
+    private int currentPlayerIndex = 0;
+    private List<String> localAnswers = new ArrayList<>();
+    private Set<Integer> localMatchedPlayerIndices = new HashSet<>();
+    private Set<Integer> localDeletedPlayerIndices = new HashSet<>();
+    private Map<Integer, String> localVotesMap = new HashMap<>();
+    private List<String> localLogs = new ArrayList<>();
+
+    private void startNewRoundLocal() {
+        // Increment spotlightPlayerIndex for subsequent rounds
+        if (currentPhase != null) {
+            spotlightPlayerIndex = (spotlightPlayerIndex + 1) % players.size();
+        }
+        currentPlayerIndex = spotlightPlayerIndex; // Spotlight starts
+        localAnswers.clear();
+        for (int i = 0; i < players.size(); i++) localAnswers.add(null);
+        localMatchedPlayerIndices.clear();
+        localDeletedPlayerIndices.clear();
+        localVotesMap.clear();
+        localLogs.clear();
+        
+        buttonLogs.setVisibility(View.GONE);
+
+        String category = getIntent().getStringExtra("category");
+        if (category != null) {
+            questionRepository.filterByCategory(category);
+        }
+        currentQuestion = questionRepository.getRandomQuestion();
+        
+        setPhase(Phase.WAITING_FOR_ANSWERS);
+    }
+
+    private void setPhase(Phase phase) {
+        currentPhase = phase;
+        
+        // Hide all layouts
+        layoutPassDevice.setVisibility(View.GONE);
+        layoutAnswerInput.setVisibility(View.GONE);
+        layoutSelection.setVisibility(View.GONE);
+        layoutResults.setVisibility(View.GONE);
+        buttonAction.setVisibility(View.GONE);
+        textViewReviewInstructions.setVisibility(View.GONE);
+
+        Player spotlight = players.get(spotlightPlayerIndex);
+        textViewTargetPlayer.setText("Spotlight: " + spotlight.getName());
+        textViewQuestion.setText(currentQuestion.getText());
+
+        switch (phase) {
+            case WAITING_FOR_ANSWERS:
+                textViewPhaseTitle.setText("Answers");
+                showPassDevice(players.get(currentPlayerIndex).getName());
+                break;
+            case REVIEW:
+                textViewPhaseTitle.setText("Review");
+                showPassDevice(players.get(spotlightPlayerIndex).getName());
+                break;
+            case VOTING:
+                textViewPhaseTitle.setText("Voting");
+                showPassDevice(players.get(currentPlayerIndex).getName());
+                break;
+            case RESULTS:
+                textViewPhaseTitle.setText("Results");
+                layoutResults.setVisibility(View.VISIBLE);
+                buttonAction.setVisibility(View.VISIBLE);
+                buttonAction.setText("Next Round");
+                showLocalResults();
+                break;
+            case FINISHED:
+                textViewPhaseTitle.setText("Game Over");
+                layoutResults.setVisibility(View.VISIBLE);
+                buttonAction.setVisibility(View.VISIBLE);
+                buttonAction.setText("Exit Game");
+                showLocalResults();
+                break;
+        }
+    }
+
+    private void showPassDevice(String name) {
+        layoutPassDevice.setVisibility(View.VISIBLE);
+        textViewPassTo.setText("Pass the device to " + name);
+    }
+
+    private void handleReady() {
+        layoutPassDevice.setVisibility(View.GONE);
+        if (currentPhase == Phase.WAITING_FOR_ANSWERS) {
+            layoutAnswerInput.setVisibility(View.VISIBLE);
+            editTextAnswer.setHint(currentPlayerIndex == spotlightPlayerIndex ? "Your secret answer" : "Guess their answer");
+        } else if (currentPhase == Phase.REVIEW) {
+            prepareLocalReviewUI();
+        } else if (currentPhase == Phase.VOTING) {
+            prepareLocalVotingUI();
+        }
+    }
+
+    private void handleSubmitAnswer() {
+        String answer = editTextAnswer.getText().toString().trim();
+        if (answer.isEmpty()) return;
+
+        localAnswers.set(currentPlayerIndex, answer);
+        editTextAnswer.setText("");
+        
+        // Circular progression
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+
+        if (currentPlayerIndex != spotlightPlayerIndex) {
+            setPhase(Phase.WAITING_FOR_ANSWERS);
+        } else {
+            // Circle complete, back to Spotlight for Review
+            setPhase(Phase.REVIEW);
+        }
+    }
+
+    private List<Integer> currentReviewOptionIndices = new ArrayList<>();
+
+    private void prepareLocalReviewUI() {
+        layoutSelection.setVisibility(View.VISIBLE);
+        textViewSelectionPrompt.setText("Review and mark matches or delete duplicates:");
+        textViewReviewInstructions.setVisibility(View.VISIBLE);
+        buttonAction.setVisibility(View.VISIBLE);
+        buttonAction.setText("Start Voting");
+
+        updateReviewList();
+    }
+
+    private void updateReviewList() {
+        currentReviewOptionIndices.clear();
+        List<String> options = new ArrayList<>();
+        Set<Integer> matchedUIPositions = new HashSet<>();
+
+        for (int i = 0; i < localAnswers.size(); i++) {
+            if (i != spotlightPlayerIndex && !localDeletedPlayerIndices.contains(i)) {
+                currentReviewOptionIndices.add(i);
+                options.add(localAnswers.get(i));
+                if (localMatchedPlayerIndices.contains(i)) {
+                    matchedUIPositions.add(options.size() - 1);
+                }
+            }
+        }
+
+        recyclerViewChoices.setLayoutManager(new LinearLayoutManager(this));
+        AnswerChoiceAdapter adapter = new AnswerChoiceAdapter(options, new AnswerChoiceAdapter.OnChoiceActionListener() {
+            @Override
+            public void onChoiceSelected(String choice) {}
+
+            @Override
+            public void onMatchClicked(String choice, int position) {
+                int playerIdx = currentReviewOptionIndices.get(position);
+                if (localMatchedPlayerIndices.contains(playerIdx)) {
+                    localMatchedPlayerIndices.remove(playerIdx);
+                } else {
+                    localMatchedPlayerIndices.add(playerIdx);
+                }
+                updateReviewList();
+            }
+
+            @Override
+            public void onDeleteClicked(int position) {
+                int playerIdx = currentReviewOptionIndices.get(position);
+                localDeletedPlayerIndices.add(playerIdx);
+                localMatchedPlayerIndices.remove(playerIdx);
+                updateReviewList();
+            }
+        });
+        adapter.setReviewMode(true);
+        adapter.setMatchedPositions(matchedUIPositions);
+        recyclerViewChoices.setAdapter(adapter);
+    }
+
+    private void prepareLocalVotingUI() {
+        layoutSelection.setVisibility(View.VISIBLE);
+        textViewSelectionPrompt.setText(players.get(currentPlayerIndex).getName() + ", pick the Spotlight's answer:");
+        
+        List<String> options = new ArrayList<>();
+        List<Integer> optionOriginalIndices = new ArrayList<>();
+
+        // Add spotlight's answer
+        options.add(localAnswers.get(spotlightPlayerIndex));
+        optionOriginalIndices.add(spotlightPlayerIndex);
+
+        // Add other players' answers (not deleted)
+        for (int i = 0; i < localAnswers.size(); i++) {
+            if (i != spotlightPlayerIndex && !localDeletedPlayerIndices.contains(i)) {
+                options.add(localAnswers.get(i));
+                optionOriginalIndices.add(i);
+            }
+        }
+        
+        // Final options list (unique by content, but we need to track if they pick their own)
+        // Actually the rule is "Players cannot vote for their own answer".
+        // Let's keep it simple: show unique answers.
+        
+        List<String> uniqueOptions = new ArrayList<>();
+        Map<String, Set<Integer>> contentToPlayerIndices = new HashMap<>();
+
+        for (int i = 0; i < options.size(); i++) {
+            String content = options.get(i).toLowerCase();
+            if (!contentToPlayerIndices.containsKey(content)) {
+                uniqueOptions.add(options.get(i));
+                contentToPlayerIndices.put(content, new HashSet<>());
+            }
+            contentToPlayerIndices.get(content).add(optionOriginalIndices.get(i));
+        }
+
+        Collections.shuffle(uniqueOptions);
+
+        recyclerViewChoices.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewChoices.setAdapter(new AnswerChoiceAdapter(uniqueOptions, new AnswerChoiceAdapter.OnChoiceActionListener() {
+            @Override
+            public void onChoiceSelected(String choice) {
+                Set<Integer> authors = contentToPlayerIndices.get(choice.toLowerCase());
+                if (authors != null && authors.contains(currentPlayerIndex)) {
+                    Toast.makeText(GameActivity.this, "You cannot choose your own answer", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                localVotesMap.put(currentPlayerIndex, choice);
+                layoutSelection.setVisibility(View.GONE);
+                
+                // Move to next voter (Circular)
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+                
+                if (currentPlayerIndex != spotlightPlayerIndex) {
+                    setPhase(Phase.VOTING);
+                } else {
+                    // Back to Spotlight for Results
+                    calculateLocalScores();
+                }
+            }
+        }));
+    }
+
+    private void calculateLocalScores() {
+        localLogs.clear();
+        String spotlightAnswer = localAnswers.get(spotlightPlayerIndex);
+        int spotlightBonus = 0;
+        
+        // First check for matches from Review phase
+        if (!localMatchedPlayerIndices.isEmpty()) {
+            for (int playerIdx : localMatchedPlayerIndices) {
+                Player p = players.get(playerIdx);
+                p.addScore(4);
+                localLogs.add(p.getName() + " matched the Spotlight's answer in Review! +4");
+            }
+            // If matches were found, we could skip voting? The prompt says "Spotlight -> Circle -> Review -> Circle -> Reveal"
+            // So voting happens regardless of matches? Or matches end the round?
+            // "Round ended immediately due to a match." is in multiplayer code.
+            // Let's follow that logic for consistency if matches exist.
+        } else {
+            // Process votes
+            for (Map.Entry<Integer, String> entry : localVotesMap.entrySet()) {
+                int voterIdx = entry.getKey();
+                String vote = entry.getValue();
+                Player voter = players.get(voterIdx);
+
+                if (vote.equalsIgnoreCase(spotlightAnswer)) {
+                    voter.addScore(2);
+                    spotlightBonus++;
+                    localLogs.add(voter.getName() + " correctly voted for the Spotlight! +2");
+                } else {
+                    // Check if they voted for another player's answer
+                    for (int j = 0; j < localAnswers.size(); j++) {
+                        if (j != spotlightPlayerIndex && !localDeletedPlayerIndices.contains(j) 
+                                && localAnswers.get(j).equalsIgnoreCase(vote)) {
+                            players.get(j).addScore(1);
+                            localLogs.add(voter.getName() + " voted for " + players.get(j).getName() + "'s answer. " + players.get(j).getName() + " gets +1");
+                        }
+                    }
+                }
+            }
+            
+            players.get(spotlightPlayerIndex).addScore(spotlightBonus);
+            if (spotlightBonus > 0) {
+                localLogs.add(players.get(spotlightPlayerIndex).getName() + " received " + spotlightBonus + " point(s) from correct guesses.");
+            }
+        }
+
+        if (localLogs.isEmpty()) {
+            localLogs.add("No points were awarded this round.");
+        }
+
+        boolean gameOver = false;
+        for (Player p : players) {
+            if (p.getScore() >= 25) {
+                gameOver = true;
+                break;
+            }
+        }
+        
+        setPhase(gameOver ? Phase.FINISHED : Phase.RESULTS);
+    }
+
+    private void showLocalResults() {
+        List<Player> playerList = new ArrayList<>(players);
+        Collections.sort(playerList, (p1, p2) -> Integer.compare(p2.getScore(), p1.getScore()));
+        
+        recyclerViewResults.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewResults.setAdapter(new ResultAdapter(playerList));
+        
+        String secret = localAnswers.get(spotlightPlayerIndex);
+        if (secret != null) {
+            textViewQuestion.setText("Secret Answer was: " + secret);
+        }
+
+        if (currentPhase == Phase.FINISHED) {
+            textViewTargetPlayer.setText("Winner: " + playerList.get(0).getName() + "!");
+        }
+
+        buttonLogs.setVisibility(View.VISIBLE);
+    }
+
+    private void handleAction() {
+        if (currentPhase == Phase.RESULTS) {
+            startNewRoundLocal();
+        } else if (currentPhase == Phase.FINISHED) {
+            finish();
+        } else if (currentPhase == Phase.REVIEW) {
+            // Start Voting Phase after Review
+            currentPlayerIndex = (spotlightPlayerIndex + 1) % players.size();
+            setPhase(Phase.VOTING);
+        }
+    }
 }

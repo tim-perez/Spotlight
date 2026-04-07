@@ -11,6 +11,7 @@ public class GameRoom implements Serializable {
     private String currentQuestion;
     private String spotlightPlayerId;
     private String status; // WAITING, IN_PROGRESS, FINISHED
+    private String category;
     private Map<String, String> guesses = new HashMap<>();
     private Map<String, String> votes = new HashMap<>();
     private java.util.List<String> logs = new java.util.ArrayList<>();
@@ -71,6 +72,14 @@ public class GameRoom implements Serializable {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public Map<String, String> getGuesses() {

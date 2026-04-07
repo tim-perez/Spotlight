@@ -3,9 +3,11 @@ package com.spotlight;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,6 +21,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.spotlight.logic.QuestionRepository;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 
@@ -35,6 +38,8 @@ public class CreateRoomActivity extends AppCompatActivity {
     private String playerId;
     private DatabaseReference roomRef;
     private ValueEventListener roomListener;
+    private Spinner spinnerCategory;
+    private QuestionRepository questionRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +52,13 @@ public class CreateRoomActivity extends AppCompatActivity {
         TextView textViewRoomCodeDisplay = findViewById(R.id.textViewRoomCodeDisplay);
         RecyclerView recyclerViewRoomPlayers = findViewById(R.id.recyclerViewRoomPlayers);
         Button buttonStartMultiplayer = findViewById(R.id.buttonStartMultiplayer);
+        spinnerCategory = findViewById(R.id.spinnerCategory);
         View buttonBack = findViewById(R.id.buttonBack);
+
+        questionRepository = new QuestionRepository();
+        ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, questionRepository.getCategories());
+        categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerCategory.setAdapter(categoryAdapter);
 
         buttonBack.setOnClickListener(v -> finish());
 
@@ -79,8 +90,14 @@ public class CreateRoomActivity extends AppCompatActivity {
                 Toast.makeText(this, "Wait for at least 3 players to start", Toast.LENGTH_SHORT).show();
                 return;
             }
-            // Update room status to IN_PROGRESS
-            roomRef.child("status").setValue("IN_PROGRESS");
+            
+            String selectedCategory = spinnerCategory.getSelectedItem().toString();
+            
+            // Update room status and category
+            java.util.Map<String, Object> updates = new java.util.HashMap<>();
+            updates.put("status", "IN_PROGRESS");
+            updates.put("category", selectedCategory);
+            roomRef.updateChildren(updates);
             
             Intent intent = new Intent(this, GameActivity.class);
             intent.putExtra("players", (ArrayList<Player>) players);
@@ -88,6 +105,7 @@ public class CreateRoomActivity extends AppCompatActivity {
             intent.putExtra("roomCode", roomCode);
             intent.putExtra("playerId", playerId);
             intent.putExtra("hostId", playerId);
+            intent.putExtra("category", selectedCategory);
             startActivity(intent);
         });
     }
