@@ -92,7 +92,7 @@ public class JoinRoomActivity extends AppCompatActivity {
                 GameRoom room = snapshot.getValue(GameRoom.class);
                 if (room != null) {
                     if ("WAITING".equals(room.getStatus())) {
-                        textViewStatus.setText("Joining room...");
+                        textViewStatus.setText("Waiting for Host...");
                         Player player = new Player(playerId, name);
                         roomsRef.child(roomCode).child("players").child(playerId).setValue(player);
                         

@@ -23,15 +23,16 @@
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:background="?attr/selectableItemBackgroundBorderless" />
 
-        <TextView
-            android:id="@+id/textViewPhaseTitle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Phase Title"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textAlignment="center" />
+    <TextView
+        android:id="@+id/textViewPhaseTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Phase Title"
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textAlignment="center" />
 
         <Button
             android:id="@+id/buttonScoreSheet"
@@ -53,6 +54,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Current Player"
+        android:textColor="@color/white"
         android:textSize="18sp"
         app:layout_constraintTop_toBottomOf="@id/layoutHeader"
         app:layout_constraintStart_toStartOf="parent"
@@ -65,6 +67,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
+        app:cardBackgroundColor="@color/surface"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -77,6 +80,7 @@
             android:layout_height="wrap_content"
             android:padding="20dp"
             android:text="Question goes here..."
+            android:textColor="@color/white"
             android:textAlignment="center"
             android:textSize="18sp"
             android:textStyle="italic" />
@@ -97,6 +101,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Type your answer here..."
+            android:textColor="@color/white"
+            android:textColorHint="#99FFFFFF"
             android:inputType="textCapSentences" />
 
         <Button
@@ -124,6 +130,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Pick the Spotlight player's answer:"
+            android:textColor="@color/white"
             android:layout_marginBottom="8dp"
             android:textStyle="bold"
             android:textSize="16sp"/>
@@ -133,6 +140,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Check mark = Matches your answer\nTrash can = Duplicate answer\n\nIf no duplicates or matches, click Start Voting."
+            android:textColor="#BDBDBD"
             android:layout_marginBottom="8dp"
             android:textSize="14sp"
             android:visibility="gone"/>
@@ -159,6 +167,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Pass the device to [Name]"
+            android:textColor="@color/white"
             android:textSize="22sp"
             android:textAlignment="center"/>
 
@@ -186,6 +195,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Round Results"
+            android:textColor="@color/white"
             android:textStyle="bold"
             android:textSize="18sp"/>
 
@@ -207,18 +217,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <com.airbnb.lottie.LottieAnimationView
-        android:id="@+id/animationViewSpotlight"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:lottie_rawRes="@raw/spotlight"
-        app:lottie_autoPlay="false"
-        app:lottie_loop="true"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/animationViewConfetti"

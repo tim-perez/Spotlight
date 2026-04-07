@@ -58,10 +58,10 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
             holder.itemView.setOnClickListener(null);
             
             if (matchedPositions.contains(position)) {
-                holder.itemView.setBackgroundColor(Color.parseColor("#C8E6C9")); // Light green
+                holder.itemView.setBackgroundColor(Color.parseColor("#2E7D32")); // Darker Green
                 holder.buttonMatch.setImageResource(android.R.drawable.checkbox_on_background);
             } else {
-                holder.itemView.setBackgroundColor(Color.WHITE);
+                holder.itemView.setBackgroundColor(Color.parseColor("#1E1E1E")); // Dark Surface Color
                 holder.buttonMatch.setImageResource(android.R.drawable.checkbox_off_background);
             }
 
@@ -72,9 +72,9 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
             holder.buttonDelete.setVisibility(View.GONE);
             
             if (selectedPosition == position) {
-                holder.itemView.setBackgroundColor(Color.LTGRAY);
+                holder.itemView.setBackgroundColor(Color.parseColor("#333333")); // Selected Dark Gray
             } else {
-                holder.itemView.setBackgroundColor(Color.WHITE);
+                holder.itemView.setBackgroundColor(Color.TRANSPARENT);
             }
 
             holder.itemView.setOnClickListener(v -> {

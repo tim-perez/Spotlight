@@ -76,7 +76,10 @@ public class QuestionRepository {
 
     public Question getRandomQuestion() {
         if (currentPool.isEmpty()) {
-            loadQuestions(); // Reset if empty
+            if (allQuestions.isEmpty()) {
+                // Return a hardcoded fallback if everything else fails
+                return new Question("Fallback: If you could have any superpower, what would it be?", "General");
+            }
             currentPool = new ArrayList<>(allQuestions);
             Collections.shuffle(currentPool);
         }

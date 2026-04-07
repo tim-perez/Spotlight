@@ -27,6 +27,8 @@ import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Looper;
 import com.airbnb.lottie.LottieAnimationView;
+import com.airbnb.lottie.RenderMode;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,7 +67,7 @@ public class GameActivity extends AppCompatActivity {
     private Button buttonSubmitAnswer, buttonReady, buttonAction, buttonScoreSheet, buttonLogs;
     private RecyclerView recyclerViewChoices, recyclerViewResults;
     private View buttonLeave;
-    private LottieAnimationView animationViewSpotlight, animationViewConfetti, animationViewReveal;
+    private LottieAnimationView animationViewConfetti, animationViewReveal;
     private MediaPlayer mediaPlayerCorrect, mediaPlayerReveal;
 
     @Override
@@ -73,33 +75,54 @@ public class GameActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
 
-        players = (ArrayList<Player>) getIntent().getSerializableExtra("players");
-        isMultiplayer = getIntent().getBooleanExtra("isMultiplayer", false);
-        roomCode = getIntent().getStringExtra("roomCode");
-        playerId = getIntent().getStringExtra("playerId");
-        hostId = getIntent().getStringExtra("hostId");
-
-        if (players == null || (isMultiplayer && players.isEmpty())) {
-            finish();
-            return;
-        }
-
-        // Sort players by ID to ensure consistent order across all devices
-        if (players != null) {
-            Collections.sort(players, (p1, p2) -> {
-                String id1 = p1.getId() != null ? p1.getId() : "";
-                String id2 = p2.getId() != null ? p2.getId() : "";
-                return id1.compareTo(id2);
-            });
-        }
-
-        questionRepository = new QuestionRepository(this);
+        // 1. Initialize views immediately so they are ready for data
         initViews();
-        
-        if (isMultiplayer) {
-            setupMultiplayer();
-        } else {
-            startNewRoundLocal();
+
+        try {
+            // 2. Safely retrieve player data
+            if (getIntent() != null && getIntent().hasExtra("players")) {
+                Serializable serializablePlayers = getIntent().getSerializableExtra("players");
+                if (serializablePlayers instanceof List) {
+                    this.players = new ArrayList<>((List<Player>) serializablePlayers);
+                }
+            }
+
+            isMultiplayer = getIntent().getBooleanExtra("isMultiplayer", false);
+            roomCode = getIntent().getStringExtra("roomCode");
+            playerId = getIntent().getStringExtra("playerId");
+            hostId = getIntent().getStringExtra("hostId");
+
+            if (players == null || players.isEmpty()) {
+                Toast.makeText(this, "No players found. Returning to menu.", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
+
+            // 3. Sort players (using a safer comparison)
+            Collections.sort(players, (p1, p2) -> {
+                String name1 = p1.getName() != null ? p1.getName() : "";
+                String name2 = p2.getName() != null ? p2.getName() : "";
+                return name1.compareToIgnoreCase(name2);
+            });
+
+            // 4. Load repository and filter
+            questionRepository = new QuestionRepository(this);
+            String category = getIntent().getStringExtra("category");
+            if (category != null && !category.equals("All")) {
+                questionRepository.filterByCategory(category);
+            }
+            
+            // 5. Start the game logic
+            if (isMultiplayer) {
+                setupMultiplayer();
+            } else {
+                startNewRoundLocal();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Critical Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            finish();
         }
     }
 
@@ -309,13 +332,11 @@ public class GameActivity extends AppCompatActivity {
 
         switch (currentPhase) {
             case WAITING_FOR_ANSWERS:
-                textViewPhaseTitle.setText(isSpotlight ? "You are the Spotlight!" : "Guessing Phase");
-                textViewTargetPlayer.setText(spotlightPlayer.getName() + " is in the Spotlight");
+                textViewPhaseTitle.setText(isSpotlight ? "YOU ARE IN THE SPOTLIGHT!" : "GUESSING PHASE");
+                textViewTargetPlayer.setText(spotlightPlayer.getName() + " is in the Spotlight!");
+                textViewTargetPlayer.setTextColor(getResources().getColor(R.color.accent_yellow));
+                textViewTargetPlayer.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
                 
-                if (isSpotlight) {
-                    showSpotlightAnimation();
-                }
-
                 if (!room.getGuesses().containsKey(playerId)) {
                     layoutAnswerInput.setVisibility(View.VISIBLE);
                     editTextAnswer.setHint(isSpotlight ? "Your secret answer" : "Guess their answer");
@@ -327,7 +348,6 @@ public class GameActivity extends AppCompatActivity {
             case REVIEW:
                 textViewPhaseTitle.setText("Review Phase");
                 if (isSpotlight) {
-                    showSpotlightAnimation();
                     layoutSelection.setVisibility(View.VISIBLE);
                     textViewReviewInstructions.setVisibility(View.VISIBLE);
                     String secret = room.getGuesses().get(playerId);
@@ -359,11 +379,8 @@ public class GameActivity extends AppCompatActivity {
 
             case RESULTS:
                 textViewPhaseTitle.setText("Round Results");
-                layoutResults.setVisibility(View.GONE); // Hide initially for reveal
-                showRevealAnimation(() -> {
-                    layoutResults.setVisibility(View.VISIBLE);
-                    showMultiplayerResultsUI(room);
-                });
+                layoutResults.setVisibility(View.VISIBLE);
+                showMultiplayerResultsUI(room);
                 if (isHost()) {
                     buttonAction.setVisibility(View.VISIBLE);
                     buttonAction.setText("Next Round");
@@ -482,6 +499,15 @@ public class GameActivity extends AppCompatActivity {
         }
     }
 
+    private void setupLottieView(LottieAnimationView view) {
+        if (view == null) return;
+        view.setRenderMode(RenderMode.HARDWARE);
+        view.setFailureListener(result -> {
+            view.setVisibility(View.GONE);
+            android.util.Log.e("LottieError", "Failed to load animation: " + result.getMessage());
+        });
+    }
+
     private void initViews() {
         textViewPhaseTitle = findViewById(R.id.textViewPhaseTitle);
         textViewTargetPlayer = findViewById(R.id.textViewTargetPlayer);
@@ -499,41 +525,55 @@ public class GameActivity extends AppCompatActivity {
         buttonSubmitAnswer = findViewById(R.id.buttonSubmitAnswer);
         buttonReady = findViewById(R.id.buttonReady);
         buttonAction = findViewById(R.id.buttonAction);
-        buttonLeave = findViewById(R.id.buttonLeave);
+        
+        // Handle potential missing views gracefully
+        View bLeave = findViewById(R.id.buttonLeave);
+        if (bLeave != null) {
+            buttonLeave = bLeave;
+            buttonLeave.setOnClickListener(v -> showLeaveConfirmation());
+        }
+        
         buttonScoreSheet = findViewById(R.id.buttonScoreSheet);
         buttonLogs = findViewById(R.id.buttonLogs);
 
         recyclerViewChoices = findViewById(R.id.recyclerViewChoices);
         recyclerViewResults = findViewById(R.id.recyclerViewResults);
-        animationViewSpotlight = findViewById(R.id.animationViewSpotlight);
         animationViewConfetti = findViewById(R.id.animationViewConfetti);
         animationViewReveal = findViewById(R.id.animationViewReveal);
 
-        buttonScoreSheet.setOnClickListener(v -> showScoreSheet());
-        buttonLogs.setOnClickListener(v -> showLogs());
+        setupLottieView(animationViewConfetti);
+        setupLottieView(animationViewReveal);
 
-        buttonSubmitAnswer.setOnClickListener(v -> {
-            if (isMultiplayer) {
-                submitMultiplayerAnswer();
-            } else {
-                handleSubmitAnswer();
-            }
-        });
-        buttonReady.setOnClickListener(v -> handleReady());
-        buttonAction.setOnClickListener(v -> {
-            if (isMultiplayer) {
-                if (currentPhase == Phase.REVIEW) {
-                    startVotingPhase();
-                } else if (currentPhase == Phase.FINISHED && isHost()) {
-                    finish();
-                } else if (isHost()) {
-                    startNextMultiplayerRound();
+        if (buttonScoreSheet != null) buttonScoreSheet.setOnClickListener(v -> showScoreSheet());
+        if (buttonLogs != null) buttonLogs.setOnClickListener(v -> showLogs());
+
+        if (buttonSubmitAnswer != null) {
+            buttonSubmitAnswer.setOnClickListener(v -> {
+                if (isMultiplayer) {
+                    submitMultiplayerAnswer();
+                } else {
+                    handleSubmitAnswer();
                 }
-            } else {
-                handleAction();
-            }
-        });
-        buttonLeave.setOnClickListener(v -> showLeaveConfirmation());
+            });
+        }
+        
+        if (buttonReady != null) buttonReady.setOnClickListener(v -> handleReady());
+        
+        if (buttonAction != null) {
+            buttonAction.setOnClickListener(v -> {
+                if (isMultiplayer) {
+                    if (currentPhase == Phase.REVIEW) {
+                        startVotingPhase();
+                    } else if (currentPhase == Phase.FINISHED && isHost()) {
+                        finish();
+                    } else if (isHost()) {
+                        startNextMultiplayerRound();
+                    }
+                } else {
+                    handleAction();
+                }
+            });
+        }
     }
 
     private void startVotingPhase() {
@@ -618,7 +658,7 @@ public class GameActivity extends AppCompatActivity {
             sb.append(p.getName()).append(": ").append(p.getScore()).append(" pts\n");
         }
         
-        new android.app.AlertDialog.Builder(this)
+        new androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Scoreboard")
             .setMessage(sb.toString())
             .setPositiveButton("OK", null)
@@ -655,7 +695,7 @@ public class GameActivity extends AppCompatActivity {
             sb.append("• ").append(log).append("\n");
         }
         
-        new android.app.AlertDialog.Builder(this)
+        new androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Round Logs")
             .setMessage(sb.toString())
             .setPositiveButton("OK", null)
@@ -719,21 +759,26 @@ public class GameActivity extends AppCompatActivity {
         textViewReviewInstructions.setVisibility(View.GONE);
 
         Player spotlight = players.get(spotlightPlayerIndex);
-        textViewTargetPlayer.setText("Spotlight: " + spotlight.getName());
+        textViewTargetPlayer.setText(spotlight.getName() + " is in the Spotlight!");
+        textViewTargetPlayer.setTextColor(getResources().getColor(R.color.accent_yellow));
+        textViewTargetPlayer.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         textViewQuestion.setText(currentQuestion.getText());
 
         switch (phase) {
             case WAITING_FOR_ANSWERS:
                 textViewPhaseTitle.setText("Answers");
                 showPassDevice(players.get(currentPlayerIndex).getName());
-                if (currentPlayerIndex == spotlightPlayerIndex) {
-                    showSpotlightAnimation();
-                }
                 break;
             case REVIEW:
                 textViewPhaseTitle.setText("Review");
                 showPassDevice(players.get(spotlightPlayerIndex).getName());
-                showSpotlightAnimation();
+                break;
+            case VOTING:
+                textViewPhaseTitle.setText("Voting Phase");
+                // In local mode, we don't need pass device for the start of voting, 
+                // but we need to pass to the first guesser.
+                int firstGuesser = (spotlightPlayerIndex + 1) % players.size();
+                showPassDevice(players.get(firstGuesser).getName());
                 break;
             case RESULTS:
                 textViewPhaseTitle.setText("Results");
@@ -756,25 +801,10 @@ public class GameActivity extends AppCompatActivity {
         }
     }
 
-    private void showSpotlightAnimation() {
-        if (animationViewSpotlight == null) return;
-        try {
-            animationViewSpotlight.setVisibility(View.VISIBLE);
-            animationViewSpotlight.playAnimation();
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                if (animationViewSpotlight != null) {
-                    animationViewSpotlight.setVisibility(View.GONE);
-                    animationViewSpotlight.cancelAnimation();
-                }
-            }, 3000);
-        } catch (Exception e) {
-            animationViewSpotlight.setVisibility(View.GONE);
-        }
-    }
-
     private void showConfettiAnimation() {
         if (animationViewConfetti == null) return;
         try {
+            animationViewConfetti.enableMergePathsForKitKatAndAbove(true);
             animationViewConfetti.setVisibility(View.VISIBLE);
             animationViewConfetti.playAnimation();
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
@@ -783,7 +813,7 @@ public class GameActivity extends AppCompatActivity {
                 }
             }, 5000);
         } catch (Exception e) {
-            animationViewConfetti.setVisibility(View.GONE);
+            if (animationViewConfetti != null) animationViewConfetti.setVisibility(View.GONE);
         }
     }
 
@@ -793,6 +823,7 @@ public class GameActivity extends AppCompatActivity {
             return;
         }
         try {
+            animationViewReveal.enableMergePathsForKitKatAndAbove(true);
             animationViewReveal.setVisibility(View.VISIBLE);
             animationViewReveal.playAnimation();
             playRevealSound();
@@ -801,9 +832,9 @@ public class GameActivity extends AppCompatActivity {
                     animationViewReveal.setVisibility(View.GONE);
                 }
                 if (onComplete != null) onComplete.run();
-            }, 3000);
+            }, 6000); // Increased from 3000 to 6000
         } catch (Exception e) {
-            animationViewReveal.setVisibility(View.GONE);
+            if (animationViewReveal != null) animationViewReveal.setVisibility(View.GONE);
             if (onComplete != null) onComplete.run();
         }
     }
@@ -811,7 +842,11 @@ public class GameActivity extends AppCompatActivity {
     private void playCorrectSound() {
         try {
             if (mediaPlayerCorrect == null) {
-                mediaPlayerCorrect = MediaPlayer.create(this, R.raw.correct);
+                // Check if the resource exists before creating
+                int resId = getResources().getIdentifier("correct", "raw", getPackageName());
+                if (resId != 0) {
+                    mediaPlayerCorrect = MediaPlayer.create(this, resId);
+                }
             }
             if (mediaPlayerCorrect != null) {
                 mediaPlayerCorrect.start();
@@ -824,7 +859,10 @@ public class GameActivity extends AppCompatActivity {
     private void playRevealSound() {
         try {
             if (mediaPlayerReveal == null) {
-                mediaPlayerReveal = MediaPlayer.create(this, R.raw.drumroll);
+                int resId = getResources().getIdentifier("drumroll", "raw", getPackageName());
+                if (resId != 0) {
+                    mediaPlayerReveal = MediaPlayer.create(this, resId);
+                }
             }
             if (mediaPlayerReveal != null) {
                 mediaPlayerReveal.start();
@@ -991,13 +1029,16 @@ public class GameActivity extends AppCompatActivity {
                 localVotesMap.put(currentPlayerIndex, choice);
                 layoutSelection.setVisibility(View.GONE);
                 
-                // Move to next voter (Circular)
+                // Move to next voter (Skipping Spotlight)
                 currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+                if (currentPlayerIndex == spotlightPlayerIndex) {
+                    currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+                }
                 
-                if (currentPlayerIndex != spotlightPlayerIndex) {
+                // If we've circled back to the first voter or through everyone, finish voting
+                if (localVotesMap.size() < players.size() - 1) {
                     setPhase(Phase.VOTING);
                 } else {
-                    // Back to Spotlight for Results
                     calculateLocalScores();
                 }
             }

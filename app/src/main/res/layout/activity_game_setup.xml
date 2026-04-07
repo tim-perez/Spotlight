@@ -36,6 +36,8 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="Player Name"
+        android:textColorHint="#99FFFFFF"
+        android:textColor="@color/white"
         android:inputType="textPersonName"
         app:layout_constraintEnd_toStartOf="@+id/buttonAddPlayer"
         app:layout_constraintStart_toStartOf="parent"
@@ -68,6 +70,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Question Category:"
+        android:textColor="@color/white"
         android:layout_marginBottom="8dp"
         app:layout_constraintBottom_toTopOf="@+id/spinnerCategory"
         app:layout_constraintStart_toStartOf="parent" />

@@ -21,6 +21,17 @@
 
         <!-- Default Button Style -->
         <item name="materialButtonStyle">@style/Widget.Spotlight.Button</item>
+
+        <!-- Fix Dialog/Popup colors -->
+        <item name="alertDialogTheme">@style/Theme.Spotlight.Dialog</item>
+    </style>
+
+    <style name="Theme.Spotlight.Dialog" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
+        <item name="android:windowBackground">@color/surface</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="android:textColorPrimary">@color/white</item>
+        <item name="android:textColorSecondary">#BDBDBD</item>
+        <item name="colorPrimary">@color/accent_yellow</item>
     </style>
 
     <style name="Widget.Spotlight.Button" parent="Widget.MaterialComponents.Button">
