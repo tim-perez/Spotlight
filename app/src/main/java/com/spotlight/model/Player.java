@@ -7,6 +7,7 @@ public class Player implements Serializable {
     private String name;
     private int score;
     private String currentAnswer;
+    private long joinTimestamp;
 
     public Player() {
         // Required for Firebase
@@ -16,12 +17,22 @@ public class Player implements Serializable {
         this.id = java.util.UUID.randomUUID().toString();
         this.name = name;
         this.score = 0;
+        this.joinTimestamp = System.currentTimeMillis();
     }
 
     public Player(String id, String name) {
         this.id = id;
         this.name = name;
         this.score = 0;
+        this.joinTimestamp = System.currentTimeMillis();
+    }
+
+    public long getJoinTimestamp() {
+        return joinTimestamp;
+    }
+
+    public void setJoinTimestamp(long joinTimestamp) {
+        this.joinTimestamp = joinTimestamp;
     }
 
     public String getId() {

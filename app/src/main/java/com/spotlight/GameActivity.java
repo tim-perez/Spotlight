@@ -98,12 +98,8 @@ public class GameActivity extends AppCompatActivity {
                 return;
             }
 
-            // 3. Sort players (using a safer comparison)
-            Collections.sort(players, (p1, p2) -> {
-                String name1 = p1.getName() != null ? p1.getName() : "";
-                String name2 = p2.getName() != null ? p2.getName() : "";
-                return name1.compareToIgnoreCase(name2);
-            });
+            // 3. Keep players in original order to respect join sequence
+            // No sorting here anymore
 
             // 4. Load repository and filter
             questionRepository = new QuestionRepository(this);
@@ -129,12 +125,23 @@ public class GameActivity extends AppCompatActivity {
     private void setupMultiplayer() {
         roomRef = FirebaseDatabase.getInstance().getReference("rooms").child(roomCode);
         
-        // Host initializes the first question
+        // Host initializes the first round
         if (isHost()) {
+            // Sort players by join timestamp to guarantee reverse-join order (Last -> Host)
+            Collections.sort(this.players, (p1, p2) -> Long.compare(p1.getJoinTimestamp(), p2.getJoinTimestamp()));
+            
             currentQuestion = questionRepository.getRandomQuestion();
-            roomRef.child("currentQuestion").setValue(currentQuestion.getText());
-            roomRef.child("spotlightPlayerId").setValue(players.get(0).getId());
-            roomRef.child("status").setValue("WAITING_FOR_ANSWERS");
+            
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("currentQuestion", currentQuestion.getText());
+            
+            if (!this.players.isEmpty()) {
+                spotlightPlayerIndex = this.players.size() - 1; // Last player who joined
+                updates.put("spotlightPlayerId", this.players.get(spotlightPlayerIndex).getId());
+            }
+            
+            updates.put("status", "WAITING_FOR_ANSWERS");
+            roomRef.updateChildren(updates);
         }
 
         roomListener = roomRef.addValueEventListener(new ValueEventListener() {
@@ -163,14 +170,18 @@ public class GameActivity extends AppCompatActivity {
         String questionText = room.getCurrentQuestion();
         String spotlightId = room.getSpotlightPlayerId();
         
-        // Sync local players list to keep scores and order updated
+        // Sync local players list and maintain join-timestamp order
         if (room.getPlayers() != null && !room.getPlayers().isEmpty()) {
             this.players = new ArrayList<>(room.getPlayers().values());
-            Collections.sort(this.players, (p1, p2) -> {
-                String id1 = p1.getId() != null ? p1.getId() : "";
-                String id2 = p2.getId() != null ? p2.getId() : "";
-                return id1.compareTo(id2);
-            });
+            Collections.sort(this.players, (p1, p2) -> Long.compare(p1.getJoinTimestamp(), p2.getJoinTimestamp()));
+            
+            // Re-sync the local index to match the current spotlight ID
+            for (int i = 0; i < players.size(); i++) {
+                if (players.get(i).getId().equals(spotlightId)) {
+                    spotlightPlayerIndex = i;
+                    break;
+                }
+            }
         }
 
         // Update local state
@@ -183,7 +194,8 @@ public class GameActivity extends AppCompatActivity {
         // Host logic for phase transitions
         if (isHost()) {
             if ("WAITING_FOR_ANSWERS".equals(status)) {
-                if (room.getGuesses() != null && room.getGuesses().size() == room.getPlayers().size()) {
+                // Ensure we have guesses from EVERY player before moving to REVIEW
+                if (room.getGuesses() != null && room.getGuesses().size() >= room.getPlayers().size()) {
                     roomRef.child("status").setValue("REVIEW");
                 }
             } else if ("VOTING".equals(status)) {
@@ -196,6 +208,7 @@ public class GameActivity extends AppCompatActivity {
         
         if ("WAITING_FOR_ANSWERS".equals(status) || "IN_PROGRESS".equals(status)) {
             currentPhase = Phase.WAITING_FOR_ANSWERS;
+            multiplayerMatchedIndices.clear(); // Reset matches for the new round
         } else if ("REVIEW".equals(status)) {
             currentPhase = Phase.REVIEW;
         } else if ("VOTING".equals(status)) {
@@ -226,54 +239,50 @@ public class GameActivity extends AppCompatActivity {
 
         if (spotlightAnswer == null) return;
 
-        boolean matchFound = false;
         Set<String> matchingPlayerIds = new HashSet<>();
-        
-        // Check for matches with spotlight
         for (Map.Entry<String, String> entry : guesses.entrySet()) {
             if (!entry.getKey().equals(spotlightId) && entry.getValue().equalsIgnoreCase(spotlightAnswer)) {
-                matchFound = true;
                 matchingPlayerIds.add(entry.getKey());
             }
         }
 
-        if (matchFound) {
-            // Rule: +4 for matching players, 0 for everyone else (including spotlight)
-            for (String pid : matchingPlayerIds) {
-                Player p = playersMap.get(pid);
-                if (p != null) {
-                    p.addScore(4);
-                    logs.add(p.getName() + " matched the Spotlight's answer! +4");
-                }
+        for (String pid : matchingPlayerIds) {
+            Player p = playersMap.get(pid);
+            if (p != null) {
+                p.addScore(4);
+                logs.add(p.getName() + " matched the Spotlight's answer! +4");
             }
-            logs.add("Round ended immediately due to a match.");
-        } else {
-            // No matches, process votes
+        }
+
+        // Process votes if we came from Voting phase or if no one matched
+        if ("VOTING".equals(room.getStatus()) || matchingPlayerIds.isEmpty()) {
             int spotlightPoints = 0;
             Map<String, Integer> authorBonuses = new HashMap<>();
 
-            for (Map.Entry<String, String> entry : votes.entrySet()) {
-                String voterId = entry.getKey();
-                String votedAnswer = entry.getValue();
-                Player voter = playersMap.get(voterId);
-                if (voter == null) continue;
+            if (votes != null) {
+                for (Map.Entry<String, String> entry : votes.entrySet()) {
+                    String voterId = entry.getKey();
+                    String votedAnswer = entry.getValue();
+                    Player voter = playersMap.get(voterId);
+                    if (voter == null) continue;
 
-                if (votedAnswer.equalsIgnoreCase(spotlightAnswer)) {
-                    // Rule: +2 for correct guesser
-                    voter.addScore(2);
-                    // Rule: +1 for spotlight for each correct guess
-                    spotlightPoints += 1;
-                    logs.add(voter.getName() + " correctly voted for the Spotlight! +2");
-                } else {
-                    // Rule: +1 for each player whose answer is selected instead of the spotlight's
-                    for (Map.Entry<String, String> gEntry : guesses.entrySet()) {
-                        String authorId = gEntry.getKey();
-                        String authoredAnswer = gEntry.getValue();
-                        if (!authorId.equals(spotlightId) && authoredAnswer.equalsIgnoreCase(votedAnswer)) {
-                            authorBonuses.put(authorId, authorBonuses.getOrDefault(authorId, 0) + 1);
-                            Player author = playersMap.get(authorId);
-                            if (author != null) {
-                                logs.add(voter.getName() + " voted for " + author.getName() + "'s answer. " + author.getName() + " gets +1");
+                    if (votedAnswer.equalsIgnoreCase(spotlightAnswer)) {
+                        // Rule: +2 for correct guesser
+                        voter.addScore(2);
+                        // Rule: +1 for spotlight for each correct guess
+                        spotlightPoints += 1;
+                        logs.add(voter.getName() + " correctly voted for the Spotlight! +2");
+                    } else {
+                        // Rule: +1 for each player whose answer is selected instead of the spotlight's
+                        for (Map.Entry<String, String> gEntry : guesses.entrySet()) {
+                            String authorId = gEntry.getKey();
+                            String authoredAnswer = gEntry.getValue();
+                            if (!authorId.equals(spotlightId) && authoredAnswer.equalsIgnoreCase(votedAnswer)) {
+                                authorBonuses.put(authorId, authorBonuses.getOrDefault(authorId, 0) + 1);
+                                Player author = playersMap.get(authorId);
+                                if (author != null) {
+                                    logs.add(voter.getName() + " voted for " + author.getName() + "'s answer. " + author.getName() + " gets +1");
+                                }
                             }
                         }
                     }
@@ -292,10 +301,12 @@ public class GameActivity extends AppCompatActivity {
                     logs.add(spotlightPlayer.getName() + " received " + spotlightPoints + " point(s) from correct guesses.");
                 }
             }
-            
-            if (logs.isEmpty()) {
-                logs.add("No points were awarded this round.");
-            }
+        } else {
+            logs.add("Round ended immediately due to a match.");
+        }
+
+        if (logs.isEmpty()) {
+            logs.add("No points were awarded this round.");
         }
 
         // Check for game winner (25 points)
@@ -319,8 +330,16 @@ public class GameActivity extends AppCompatActivity {
         roomRef.updateChildren(updates);
     }
 
+    private java.util.Set<Integer> multiplayerMatchedIndices = new java.util.HashSet<>();
+
+    private Phase lastProcessedPhase = null;
+
     private void updateMultiplayerUI(GameRoom room, Player spotlightPlayer) {
         if (currentPhase == null) return;
+
+        // Prevent UI flickering/freezing by only resetting major components on phase change
+        boolean phaseChanged = (currentPhase != lastProcessedPhase);
+        lastProcessedPhase = currentPhase;
 
         layoutAnswerInput.setVisibility(View.GONE);
         layoutSelection.setVisibility(View.GONE);
@@ -337,7 +356,8 @@ public class GameActivity extends AppCompatActivity {
                 textViewTargetPlayer.setTextColor(getResources().getColor(R.color.accent_yellow));
                 textViewTargetPlayer.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
                 
-                if (!room.getGuesses().containsKey(playerId)) {
+                Map<String, String> currentGuesses = room.getGuesses();
+                if (currentGuesses == null || !currentGuesses.containsKey(playerId)) {
                     layoutAnswerInput.setVisibility(View.VISIBLE);
                     editTextAnswer.setHint(isSpotlight ? "Your secret answer" : "Guess their answer");
                 } else {
@@ -352,9 +372,14 @@ public class GameActivity extends AppCompatActivity {
                     textViewReviewInstructions.setVisibility(View.VISIBLE);
                     String secret = room.getGuesses().get(playerId);
                     textViewSelectionPrompt.setText("Your Answer: " + (secret != null ? secret : ""));
-                    prepareReviewUI(room);
+                    
+                    if (phaseChanged || recyclerViewChoices.getAdapter() == null) {
+                        prepareReviewUI(room);
+                    }
+                    
                     buttonAction.setVisibility(View.VISIBLE);
-                    buttonAction.setText("Start Voting");
+                    buttonAction.setEnabled(true);
+                    buttonAction.setText(multiplayerMatchedIndices.isEmpty() ? "Start Voting" : "It's a match! Reveal Results");
                 } else {
                     textViewQuestion.setText("Spotlight is reviewing answers...");
                     textViewReviewInstructions.setVisibility(View.GONE);
@@ -367,12 +392,16 @@ public class GameActivity extends AppCompatActivity {
                 if (isSpotlight) {
                     textViewQuestion.setText("Wait for others to vote!");
                 } else {
-                    if (!room.getVotes().containsKey(playerId)) {
+                    Map<String, String> currentVotes = room.getVotes();
+                    if (currentVotes == null || !currentVotes.containsKey(playerId)) {
                         layoutSelection.setVisibility(View.VISIBLE);
                         textViewSelectionPrompt.setText("Pick the Spotlight player's answer:");
-                        prepareMultiplayerVotingUI(room, spotlightPlayer);
+                        if (phaseChanged || recyclerViewChoices.getAdapter() == null) {
+                            prepareMultiplayerVotingUI(room, spotlightPlayer);
+                        }
                     } else {
                         textViewQuestion.setText("Waiting for other votes...");
+                        layoutSelection.setVisibility(View.GONE);
                     }
                 }
                 break;
@@ -381,10 +410,9 @@ public class GameActivity extends AppCompatActivity {
                 textViewPhaseTitle.setText("Round Results");
                 layoutResults.setVisibility(View.VISIBLE);
                 showMultiplayerResultsUI(room);
-                if (isHost()) {
-                    buttonAction.setVisibility(View.VISIBLE);
-                    buttonAction.setText("Next Round");
-                }
+                buttonAction.setVisibility(View.VISIBLE);
+                buttonAction.setText(isHost() ? "Next Round" : "Wait for Host");
+                buttonAction.setEnabled(isHost());
                 break;
 
             case FINISHED:
@@ -394,6 +422,7 @@ public class GameActivity extends AppCompatActivity {
                 showConfettiAnimation();
                 if (isHost()) {
                     buttonAction.setVisibility(View.VISIBLE);
+                    buttonAction.setEnabled(true);
                     buttonAction.setText("Back to Menu");
                 }
                 break;
@@ -405,9 +434,15 @@ public class GameActivity extends AppCompatActivity {
         Map<String, String> guesses = room.getGuesses();
         String spotlightId = room.getSpotlightPlayerId();
         
-        for (Map.Entry<String, String> entry : guesses.entrySet()) {
-            if (!entry.getKey().equals(spotlightId)) {
-                options.add(entry.getValue());
+        // Use a stable order for options to map positions correctly
+        List<String> playerIds = new ArrayList<>(guesses.keySet());
+        Collections.sort(playerIds);
+        List<String> guessAuthors = new ArrayList<>();
+
+        for (String pid : playerIds) {
+            if (!pid.equals(spotlightId)) {
+                options.add(guesses.get(pid));
+                guessAuthors.add(pid);
             }
         }
 
@@ -418,14 +453,21 @@ public class GameActivity extends AppCompatActivity {
 
             @Override
             public void onMatchClicked(String choice, int position) {
-                // Match: Set this player's guess to EXACTLY the spotlight's answer (case sync)
+                String authorId = guessAuthors.get(position);
                 String spotlightAnswer = guesses.get(spotlightId);
-                for (Map.Entry<String, String> entry : guesses.entrySet()) {
-                    if (!entry.getKey().equals(spotlightId) && entry.getValue().equalsIgnoreCase(choice)) {
-                        roomRef.child("guesses").child(entry.getKey()).setValue(spotlightAnswer);
-                        break;
-                    }
+                
+                if (multiplayerMatchedIndices.contains(position)) {
+                    multiplayerMatchedIndices.remove(position);
+                    // Optionally revert the guess if needed, but let's keep it simple for now
+                } else {
+                    multiplayerMatchedIndices.add(position);
+                    roomRef.child("guesses").child(authorId).setValue(spotlightAnswer);
                 }
+                
+                // Update button text immediately without waiting for Firebase sync
+                buttonAction.setText(multiplayerMatchedIndices.isEmpty() ? "Start Voting" : "It's a match! Reveal Results");
+                // Notify adapter to show highlights
+                ((AnswerChoiceAdapter)recyclerViewChoices.getAdapter()).setMatchedPositions(multiplayerMatchedIndices);
             }
 
             @Override
@@ -441,38 +483,52 @@ public class GameActivity extends AppCompatActivity {
             }
         });
         reviewAdapter.setReviewMode(true);
+        reviewAdapter.setMatchedPositions(multiplayerMatchedIndices);
         recyclerViewChoices.setAdapter(reviewAdapter);
     }
 
     private void prepareMultiplayerVotingUI(GameRoom room, Player spotlightPlayer) {
         List<String> options = new ArrayList<>();
-        String secret = room.getGuesses().get(spotlightPlayer.getId());
+        Map<String, String> guesses = room.getGuesses();
+        String spotlightId = room.getSpotlightPlayerId();
+        
+        // Add the spotlight's actual answer
+        String secret = guesses.get(spotlightId);
         if (secret != null) options.add(secret);
         
-        Map<String, String> guesses = room.getGuesses();
+        // Add all unique guesses from other players (excluding the spotlight)
         for (Map.Entry<String, String> entry : guesses.entrySet()) {
             String authorId = entry.getKey();
             String guess = entry.getValue();
-            // Don't show the spotlight's answer (it's added separately as 'secret')
-            // and don't show the player's own answer to them
-            if (!authorId.equals(spotlightPlayer.getId()) && !authorId.equals(playerId)) {
+            
+            if (!authorId.equals(spotlightId)) {
                 options.add(guess);
             }
         }
-        // Remove duplicates from voting list (case insensitive)
+
+        // De-duplicate (case-insensitive) to hide authorship
         List<String> uniqueOptions = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         for (String opt : options) {
-            if (seen.add(opt.toLowerCase())) {
+            if (opt != null && seen.add(opt.trim().toLowerCase())) {
                 uniqueOptions.add(opt);
             }
         }
+        
+        // Shuffle so the correct answer isn't always first
         Collections.shuffle(uniqueOptions);
 
         recyclerViewChoices.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewChoices.setAdapter(new AnswerChoiceAdapter(uniqueOptions, new AnswerChoiceAdapter.OnChoiceActionListener() {
             @Override
             public void onChoiceSelected(String choice) {
+                // Prevent voting for your own guess if it's in the list
+                String myGuess = guesses.get(playerId);
+                if (myGuess != null && myGuess.equalsIgnoreCase(choice)) {
+                    Toast.makeText(GameActivity.this, "You cannot vote for your own answer!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
                 roomRef.child("votes").child(playerId).setValue(choice);
                 layoutSelection.setVisibility(View.GONE);
                 textViewQuestion.setText("Waiting for other votes...");
@@ -577,35 +633,20 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void startVotingPhase() {
-        roomRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                GameRoom room = snapshot.getValue(GameRoom.class);
-                if (room != null) {
-                    Map<String, String> guesses = room.getGuesses();
-                    String spotlightId = room.getSpotlightPlayerId();
-                    String spotlightAnswer = guesses.get(spotlightId);
-
-                    boolean matchFound = false;
-                    for (Map.Entry<String, String> entry : guesses.entrySet()) {
-                        if (!entry.getKey().equals(spotlightId) && entry.getValue().equalsIgnoreCase(spotlightAnswer)) {
-                            matchFound = true;
-                            break;
-                        }
-                    }
-
-                    if (matchFound) {
+        // If the Spotlight has confirmed any matches, skip voting and go straight to results.
+        if (!multiplayerMatchedIndices.isEmpty()) {
+            roomRef.get().addOnCompleteListener(task -> {
+                if (task.isSuccessful() && task.getResult() != null) {
+                    GameRoom room = task.getResult().getValue(GameRoom.class);
+                    if (room != null) {
                         calculateScoresAndMoveToResults(room);
-                    } else if (guesses.size() <= 1) {
-                        roomRef.child("status").setValue("RESULTS");
-                    } else {
-                        roomRef.child("status").setValue("VOTING");
                     }
                 }
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
-        });
+            });
+        } else {
+            // No matches confirmed, proceed to the voting phase as requested.
+            roomRef.child("status").setValue("VOTING");
+        }
     }
 
     private void submitMultiplayerAnswer() {
@@ -621,28 +662,29 @@ public class GameActivity extends AppCompatActivity {
     private void startNextMultiplayerRound() {
         if (!isHost()) return;
 
-        // Reset round-specific data
-        roomRef.child("guesses").removeValue();
-        roomRef.child("votes").removeValue();
-        roomRef.child("logs").removeValue();
-
-        // Move to next spotlight player
-        spotlightPlayerIndex = (spotlightPlayerIndex + 1) % players.size();
-        String nextSpotlightId = players.get(spotlightPlayerIndex).getId();
-
-        // Get a new question based on the selected category
-        String category = getIntent().getStringExtra("category");
-        if (category != null) {
-            questionRepository.filterByCategory(category);
-        }
-        Question nextQuestion = questionRepository.getRandomQuestion();
-
+        // Reset round-specific data in an atomic update
         Map<String, Object> updates = new HashMap<>();
+        updates.put("guesses", null);
+        updates.put("votes", null);
+
+        // Move to next spotlight player in reverse join order
+        spotlightPlayerIndex = (spotlightPlayerIndex - 1 + players.size()) % players.size();
+        String nextSpotlightId = players.get(spotlightPlayerIndex).getId();
         updates.put("spotlightPlayerId", nextSpotlightId);
+
+        // Get a new question
+        Question nextQuestion = questionRepository.getRandomQuestion();
         updates.put("currentQuestion", nextQuestion.getText());
+        
+        // Reset status to wait for new answers
         updates.put("status", "WAITING_FOR_ANSWERS");
 
-        roomRef.updateChildren(updates);
+        roomRef.updateChildren(updates).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                // Locally clear matches so the UI updates immediately for the host
+                multiplayerMatchedIndices.clear();
+            }
+        });
     }
 
     private void showScoreSheet() {
@@ -772,6 +814,13 @@ public class GameActivity extends AppCompatActivity {
             case REVIEW:
                 textViewPhaseTitle.setText("Review");
                 showPassDevice(players.get(spotlightPlayerIndex).getName());
+                
+                // Check for matches in local mode to update button
+                if (!localMatchedPlayerIndices.isEmpty()) {
+                    buttonAction.setText("It's a match! Reveal Results");
+                } else {
+                    buttonAction.setText("Start Voting");
+                }
                 break;
             case VOTING:
                 textViewPhaseTitle.setText("Voting Phase");
@@ -785,6 +834,7 @@ public class GameActivity extends AppCompatActivity {
                 layoutResults.setVisibility(View.VISIBLE);
                 buttonAction.setVisibility(View.VISIBLE);
                 buttonAction.setText("Next Round");
+                buttonAction.setEnabled(true);
                 showLocalResults();
                 break;
             case FINISHED:
@@ -1131,9 +1181,13 @@ public class GameActivity extends AppCompatActivity {
         } else if (currentPhase == Phase.FINISHED) {
             finish();
         } else if (currentPhase == Phase.REVIEW) {
-            // Start Voting Phase after Review
-            currentPlayerIndex = (spotlightPlayerIndex + 1) % players.size();
-            setPhase(Phase.VOTING);
+            if (!localMatchedPlayerIndices.isEmpty()) {
+                calculateLocalScores();
+            } else {
+                // Start Voting Phase after Review
+                currentPlayerIndex = (spotlightPlayerIndex + 1) % players.size();
+                setPhase(Phase.VOTING);
+            }
         }
     }
 }
