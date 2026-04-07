@@ -4,17 +4,17 @@
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/accent_yellow</item>
         <item name="colorPrimaryVariant">#C6A700</item>
-        <item name="onPrimary">@color/black</item>
+        <item name="colorOnPrimary">@color/black</item>
         <!-- Secondary brand color. -->
         <item name="colorSecondary">@color/accent_yellow</item>
         <item name="colorSecondaryVariant">#C6A700</item>
-        <item name="onSecondary">@color/black</item>
+        <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">@color/black</item>
         <!-- Background and surface. -->
         <item name="android:windowBackground">@color/background</item>
         <item name="colorSurface">@color/surface</item>
-        <item name="onSurface">@color/onSurface</item>
+        <item name="colorOnSurface">@color/onSurface</item>
 
         <item name="android:textColorPrimary">@color/white</item>
         <item name="android:textColorSecondary">#BDBDBD</item>
