@@ -23,6 +23,10 @@ import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 import com.spotlight.model.Question;
 
+import android.media.MediaPlayer;
+import android.os.Handler;
+import android.os.Looper;
+import com.airbnb.lottie.LottieAnimationView;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,6 +65,8 @@ public class GameActivity extends AppCompatActivity {
     private Button buttonSubmitAnswer, buttonReady, buttonAction, buttonScoreSheet, buttonLogs;
     private RecyclerView recyclerViewChoices, recyclerViewResults;
     private View buttonLeave;
+    private LottieAnimationView animationViewSpotlight, animationViewConfetti, animationViewReveal;
+    private MediaPlayer mediaPlayerCorrect, mediaPlayerReveal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -306,6 +312,10 @@ public class GameActivity extends AppCompatActivity {
                 textViewPhaseTitle.setText(isSpotlight ? "You are the Spotlight!" : "Guessing Phase");
                 textViewTargetPlayer.setText(spotlightPlayer.getName() + " is in the Spotlight");
                 
+                if (isSpotlight) {
+                    showSpotlightAnimation();
+                }
+
                 if (!room.getGuesses().containsKey(playerId)) {
                     layoutAnswerInput.setVisibility(View.VISIBLE);
                     editTextAnswer.setHint(isSpotlight ? "Your secret answer" : "Guess their answer");
@@ -317,6 +327,7 @@ public class GameActivity extends AppCompatActivity {
             case REVIEW:
                 textViewPhaseTitle.setText("Review Phase");
                 if (isSpotlight) {
+                    showSpotlightAnimation();
                     layoutSelection.setVisibility(View.VISIBLE);
                     textViewReviewInstructions.setVisibility(View.VISIBLE);
                     String secret = room.getGuesses().get(playerId);
@@ -348,8 +359,11 @@ public class GameActivity extends AppCompatActivity {
 
             case RESULTS:
                 textViewPhaseTitle.setText("Round Results");
-                layoutResults.setVisibility(View.VISIBLE);
-                showMultiplayerResultsUI(room);
+                layoutResults.setVisibility(View.GONE); // Hide initially for reveal
+                showRevealAnimation(() -> {
+                    layoutResults.setVisibility(View.VISIBLE);
+                    showMultiplayerResultsUI(room);
+                });
                 if (isHost()) {
                     buttonAction.setVisibility(View.VISIBLE);
                     buttonAction.setText("Next Round");
@@ -360,6 +374,7 @@ public class GameActivity extends AppCompatActivity {
                 textViewPhaseTitle.setText("GAME OVER!");
                 layoutResults.setVisibility(View.VISIBLE);
                 showMultiplayerResultsUI(room);
+                showConfettiAnimation();
                 if (isHost()) {
                     buttonAction.setVisibility(View.VISIBLE);
                     buttonAction.setText("Back to Menu");
@@ -490,6 +505,9 @@ public class GameActivity extends AppCompatActivity {
 
         recyclerViewChoices = findViewById(R.id.recyclerViewChoices);
         recyclerViewResults = findViewById(R.id.recyclerViewResults);
+        animationViewSpotlight = findViewById(R.id.animationViewSpotlight);
+        animationViewConfetti = findViewById(R.id.animationViewConfetti);
+        animationViewReveal = findViewById(R.id.animationViewReveal);
 
         buttonScoreSheet.setOnClickListener(v -> showScoreSheet());
         buttonLogs.setOnClickListener(v -> showLogs());
@@ -708,14 +726,14 @@ public class GameActivity extends AppCompatActivity {
             case WAITING_FOR_ANSWERS:
                 textViewPhaseTitle.setText("Answers");
                 showPassDevice(players.get(currentPlayerIndex).getName());
+                if (currentPlayerIndex == spotlightPlayerIndex) {
+                    showSpotlightAnimation();
+                }
                 break;
             case REVIEW:
                 textViewPhaseTitle.setText("Review");
                 showPassDevice(players.get(spotlightPlayerIndex).getName());
-                break;
-            case VOTING:
-                textViewPhaseTitle.setText("Voting");
-                showPassDevice(players.get(currentPlayerIndex).getName());
+                showSpotlightAnimation();
                 break;
             case RESULTS:
                 textViewPhaseTitle.setText("Results");
@@ -730,7 +748,68 @@ public class GameActivity extends AppCompatActivity {
                 buttonAction.setVisibility(View.VISIBLE);
                 buttonAction.setText("Exit Game");
                 showLocalResults();
+                showConfettiAnimation();
                 break;
+            default:
+                textViewPhaseTitle.setText(phase.name());
+                break;
+        }
+    }
+
+    private void showSpotlightAnimation() {
+        animationViewSpotlight.setVisibility(View.VISIBLE);
+        animationViewSpotlight.playAnimation();
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            animationViewSpotlight.setVisibility(View.GONE);
+            animationViewSpotlight.cancelAnimation();
+        }, 3000);
+    }
+
+    private void showConfettiAnimation() {
+        animationViewConfetti.setVisibility(View.VISIBLE);
+        animationViewConfetti.playAnimation();
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            animationViewConfetti.setVisibility(View.GONE);
+        }, 5000);
+    }
+
+    private void showRevealAnimation(Runnable onComplete) {
+        animationViewReveal.setVisibility(View.VISIBLE);
+        animationViewReveal.playAnimation();
+        playRevealSound();
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            animationViewReveal.setVisibility(View.GONE);
+            if (onComplete != null) onComplete.run();
+        }, 3000);
+    }
+
+    private void playCorrectSound() {
+        if (mediaPlayerCorrect == null) {
+            mediaPlayerCorrect = MediaPlayer.create(this, R.raw.correct);
+        }
+        mediaPlayerCorrect.start();
+    }
+
+    private void playRevealSound() {
+        if (mediaPlayerReveal == null) {
+            mediaPlayerReveal = MediaPlayer.create(this, R.raw.drumroll);
+        }
+        mediaPlayerReveal.start();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mediaPlayerCorrect != null) {
+            mediaPlayerCorrect.release();
+            mediaPlayerCorrect = null;
+        }
+        if (mediaPlayerReveal != null) {
+            mediaPlayerReveal.release();
+            mediaPlayerReveal = null;
+        }
+        if (roomRef != null && roomListener != null) {
+            roomRef.removeEventListener(roomListener);
         }
     }
 
@@ -930,6 +1009,7 @@ public class GameActivity extends AppCompatActivity {
             players.get(spotlightPlayerIndex).addScore(spotlightBonus);
             if (spotlightBonus > 0) {
                 localLogs.add(players.get(spotlightPlayerIndex).getName() + " received " + spotlightBonus + " point(s) from correct guesses.");
+                playCorrectSound();
             }
         }
 
