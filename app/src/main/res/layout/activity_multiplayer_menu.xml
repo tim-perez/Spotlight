@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background"
     android:padding="16dp">
 
     <ImageButton
@@ -12,6 +13,7 @@
         android:src="@android:drawable/ic_menu_revert"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Back"
+        app:tint="@color/white"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -19,9 +21,10 @@
         android:id="@+id/textViewMultiTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Multiplayer"
+        android:text="MULTIPLAYER"
         android:textSize="32sp"
-        android:textStyle="bold"
+        android:fontFamily="sans-serif-black"
+        android:textColor="@color/accent_yellow"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toEndOf="@id/buttonBack"
         app:layout_constraintEnd_toEndOf="parent"

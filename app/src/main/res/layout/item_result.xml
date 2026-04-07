@@ -4,6 +4,8 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="12dp"
+    android:background="@color/surface"
+    android:layout_marginBottom="4dp"
     android:gravity="center_vertical">
 
     <TextView
@@ -12,12 +14,14 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:textSize="18sp"
-        android:textStyle="bold" />
+        android:textColor="@color/white"
+        android:fontFamily="sans-serif-medium" />
 
     <TextView
         android:id="@+id/textViewResultScore"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="18sp"
-        android:textColor="@color/black" />
+        android:textColor="@color/accent_yellow"
+        android:textStyle="bold" />
 </LinearLayout>
