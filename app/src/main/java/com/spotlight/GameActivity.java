@@ -385,7 +385,7 @@ public class GameActivity extends AppCompatActivity {
             public void onChoiceSelected(String choice) {}
 
             @Override
-            public void onMatchClicked(String choice) {
+            public void onMatchClicked(String choice, int position) {
                 // Match: Set this player's guess to EXACTLY the spotlight's answer (case sync)
                 String spotlightAnswer = guesses.get(spotlightId);
                 for (Map.Entry<String, String> entry : guesses.entrySet()) {
@@ -397,7 +397,8 @@ public class GameActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onDeleteClicked(String choice) {
+            public void onDeleteClicked(int position) {
+                String choice = options.get(position);
                 // Duplicate: Remove the guess
                 for (Map.Entry<String, String> entry : guesses.entrySet()) {
                     if (!entry.getKey().equals(spotlightId) && entry.getValue().equalsIgnoreCase(choice)) {
