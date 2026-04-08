@@ -49,7 +49,7 @@ public class JoinRoomActivity extends AppCompatActivity {
         EditText editTextPlayerName = findViewById(R.id.editTextPlayerName);
         Button buttonJoin = findViewById(R.id.buttonJoin);
         textViewStatus = findViewById(R.id.textViewStatus);
-        RecyclerView recyclerViewPlayers = findViewById(R.id.recyclerViewPlayersInRoom);
+        RecyclerView recyclerViewPlayers = findViewById(R.id.recyclerViewJoinPlayers);
         LinearLayout layoutJoinForm = findViewById(R.id.layoutJoinForm);
         View buttonBack = findViewById(R.id.buttonBack);
 
@@ -101,6 +101,7 @@ public class JoinRoomActivity extends AppCompatActivity {
                     
                     roomRef.child("players").child(playerId).setValue(newPlayer);
                     adapter.setHostId(room.getHostId());
+                    findViewById(R.id.recyclerViewJoinPlayers).setVisibility(View.VISIBLE);
                     listenForPlayersAndStart();
                 } else {
                     Toast.makeText(this, R.string.error_room_started, Toast.LENGTH_SHORT).show();

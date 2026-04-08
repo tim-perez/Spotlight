@@ -34,12 +34,15 @@
     <string name="hint_room_code">Room Code</string>
     <string name="button_join">Join</string>
     <string name="status_searching">Searching for room: %1$s…</string>
-    <string name="status_waiting_host">Waiting for Host…</string>
+    <string name="status_joining">Joining room…</string>
+    <string name="status_waiting_host">Waiting for Host (%1$d players)…</string>
     <string name="error_room_not_found">Room %1$s not found.</string>
     <string name="error_game_in_progress">Game already in progress.</string>
+    <string name="error_room_started">Game already in progress.</string>
     <string name="error_reading_room">Error reading room data.</string>
     <string name="error_database_format">Database error: %1$s</string>
     <string name="error_enter_name_code">Enter name and room code</string>
+    <string name="error_fill_fields">Please fill all fields</string>
 
     <!-- Adapters -->
     <string name="host_suffix"> (Host)</string>
