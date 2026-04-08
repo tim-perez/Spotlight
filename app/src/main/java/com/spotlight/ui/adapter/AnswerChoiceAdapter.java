@@ -35,6 +35,10 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
         this.listener = listener;
     }
 
+    public void setListener(OnChoiceActionListener listener) {
+        this.listener = listener;
+    }
+
     public void setReviewMode(boolean reviewMode) {
         this.isReviewMode = reviewMode;
     }

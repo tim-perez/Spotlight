@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
         // Target 1: Pass and Play
         Target passAndPlayTarget = new Target.Builder()
                 .setAnchor(buttonPassAndPlay)
-                .setShape(new Circle(150f))
+                .setShape(new Circle(180f))
                 .setOverlay(walkthroughView)
                 .setOnTargetListener(new com.takusemba.spotlight.OnTargetListener() {
                     @Override
@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
         // Target 2: Online Multiplayer
         Target multiplayerTarget = new Target.Builder()
                 .setAnchor(buttonMultiplayer)
-                .setShape(new Circle(150f))
+                .setShape(new Circle(180f))
                 .setOverlay(walkthroughView)
                 .setOnTargetListener(new com.takusemba.spotlight.OnTargetListener() {
                     @Override

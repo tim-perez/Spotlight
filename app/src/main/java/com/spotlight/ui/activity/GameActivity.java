@@ -170,8 +170,7 @@ public class GameActivity extends AppCompatActivity {
                 break;
             case VOTING:
                 binding.textViewPhaseTitle.setText(R.string.phase_voting);
-                int firstGuesser = (viewModel.getSpotlightPlayerIndex().getValue() + 1) % players.size();
-                showPassDevice(players.get(firstGuesser).getName());
+                showPassDevice(players.get(viewModel.getCurrentPlayerIndex()).getName());
                 break;
             case RESULTS:
                 binding.textViewPhaseTitle.setText(R.string.phase_results);
@@ -441,7 +440,8 @@ public class GameActivity extends AppCompatActivity {
         List<String> choices = new ArrayList<>(room.getGuesses().values());
         Collections.shuffle(choices);
         
-        AnswerChoiceAdapter adapter = new AnswerChoiceAdapter(choices, new AnswerChoiceAdapter.OnChoiceActionListener() {
+        final AnswerChoiceAdapter adapter = new AnswerChoiceAdapter(choices, null);
+        adapter.setListener(new AnswerChoiceAdapter.OnChoiceActionListener() {
             @Override
             public void onChoiceSelected(String choice) {}
 
@@ -453,7 +453,7 @@ public class GameActivity extends AppCompatActivity {
                     multiplayerMatchedIndices.add(position);
                 }
                 binding.buttonAction.setText(multiplayerMatchedIndices.isEmpty() ? getString(R.string.button_start_voting) : getString(R.string.button_reveal_results));
-                // Redraw or notify adapter
+                adapter.setMatchedPositions(multiplayerMatchedIndices);
             }
         });
         adapter.setReviewMode(true);
@@ -464,26 +464,31 @@ public class GameActivity extends AppCompatActivity {
     private void prepareLocalReviewUI() {
         binding.layoutSelection.setVisibility(View.VISIBLE);
         binding.buttonAction.setVisibility(View.VISIBLE);
-        binding.buttonAction.setText(R.string.button_start_voting);
+        binding.buttonAction.setText(viewModel.getLocalMatchedPlayerIndices().isEmpty() ? R.string.button_start_voting : R.string.button_reveal_results);
         binding.buttonAction.setEnabled(true);
         
         List<String> choices = viewModel.getCurrentChoices().getValue();
-        AnswerChoiceAdapter adapter = new AnswerChoiceAdapter(choices, new AnswerChoiceAdapter.OnChoiceActionListener() {
+        final AnswerChoiceAdapter adapter = new AnswerChoiceAdapter(choices, null);
+        adapter.setListener(new AnswerChoiceAdapter.OnChoiceActionListener() {
             @Override
             public void onChoiceSelected(String choice) {}
 
             @Override
             public void onMatchClicked(String choice, int position) {
                 viewModel.toggleLocalMatch(position);
-                // The adapter needs to reflect this change
+                binding.buttonAction.setText(viewModel.getLocalMatchedPlayerIndices().isEmpty() ? R.string.button_start_voting : R.string.button_reveal_results);
+                adapter.setMatchedPositions(viewModel.getLocalMatchedPlayerIndices());
             }
 
             @Override
             public void onDeleteClicked(int position) {
                 viewModel.deleteLocalChoice(position);
+                binding.buttonAction.setText((viewModel.getLocalMatchedPlayerIndices().isEmpty() && viewModel.getLocalDeletedPlayerIndices().isEmpty()) ? R.string.button_start_voting : R.string.button_reveal_results);
+                adapter.notifyItemChanged(position);
             }
         });
         adapter.setReviewMode(true);
+        adapter.setMatchedPositions(viewModel.getLocalMatchedPlayerIndices());
         binding.recyclerViewChoices.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerViewChoices.setAdapter(adapter);
     }
