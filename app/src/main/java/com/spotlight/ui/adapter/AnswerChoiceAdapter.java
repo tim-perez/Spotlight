@@ -35,6 +35,12 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
         this.listener = listener;
     }
 
+    public void setChoices(List<String> choices) {
+        this.choices = choices;
+        this.selectedPosition = -1; // Reset selection when choices change
+        notifyDataSetChanged();
+    }
+
     public void setListener(OnChoiceActionListener listener) {
         this.listener = listener;
     }
