@@ -127,14 +127,28 @@
     </LinearLayout>
 
     <TextView
-        android:id="@+id/textViewStatus"
+        android:id="@+id/textViewRoomCode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@+id/textViewJoinTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/textViewStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:text="@string/status_waiting_host"
         android:textColor="@color/white"
+        android:textSize="16sp"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@+id/buttonJoin"
+        app:layout_constraintTop_toBottomOf="@+id/textViewRoomCode"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

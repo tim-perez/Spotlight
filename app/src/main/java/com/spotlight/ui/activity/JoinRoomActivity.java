@@ -76,6 +76,8 @@ public class JoinRoomActivity extends AppCompatActivity {
         viewModel.getIsJoined().observe(this, isJoined -> {
             if (isJoined) {
                 binding.layoutJoinForm.setVisibility(View.GONE);
+                binding.textViewRoomCode.setVisibility(View.VISIBLE);
+                binding.textViewRoomCode.setText(getString(R.string.room_code_format, viewModel.getRoomCode()));
                 binding.textViewStatus.setVisibility(View.VISIBLE);
                 binding.recyclerViewJoinPlayers.setVisibility(View.VISIBLE);
             }
