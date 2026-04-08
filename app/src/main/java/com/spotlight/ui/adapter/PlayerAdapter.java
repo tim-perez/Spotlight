@@ -17,11 +17,18 @@ import java.util.List;
 
 public class PlayerAdapter extends RecyclerView.Adapter<PlayerAdapter.PlayerViewHolder> {
 
+    public interface OnPlayerActionListener {
+        void onEditPlayer(Player player, int position);
+        void onDeletePlayer(int position);
+    }
+
     private List<Player> playerList;
     private String hostId;
+    private OnPlayerActionListener listener;
 
-    public PlayerAdapter(List<Player> playerList) {
+    public PlayerAdapter(List<Player> playerList, OnPlayerActionListener listener) {
         this.playerList = playerList;
+        this.listener = listener;
     }
 
     public void setPlayers(List<Player> players) {
@@ -57,6 +64,16 @@ public class PlayerAdapter extends RecyclerView.Adapter<PlayerAdapter.PlayerView
             holder.binding.viewAvatarColor.setBackground(drawable);
         } else {
             holder.binding.viewAvatarColor.setBackgroundResource(android.R.color.darker_gray);
+        }
+
+        if (listener != null) {
+            holder.binding.buttonEditPlayer.setVisibility(View.VISIBLE);
+            holder.binding.buttonDeletePlayer.setVisibility(View.VISIBLE);
+            holder.binding.buttonEditPlayer.setOnClickListener(v -> listener.onEditPlayer(player, holder.getAdapterPosition()));
+            holder.binding.buttonDeletePlayer.setOnClickListener(v -> listener.onDeletePlayer(holder.getAdapterPosition()));
+        } else {
+            holder.binding.buttonEditPlayer.setVisibility(View.GONE);
+            holder.binding.buttonDeletePlayer.setVisibility(View.GONE);
         }
     }
 

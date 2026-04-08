@@ -20,4 +20,23 @@
         android:layout_weight="1"
         android:textColor="@color/white"
         android:textSize="18sp" />
+
+    <ImageButton
+        android:id="@+id/buttonEditPlayer"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_edit"
+        android:tint="@color/white"
+        android:contentDescription="Edit Player" />
+
+    <ImageButton
+        android:id="@+id/buttonDeletePlayer"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_delete"
+        android:tint="@color/white"
+        android:contentDescription="Delete Player" />
 </LinearLayout>

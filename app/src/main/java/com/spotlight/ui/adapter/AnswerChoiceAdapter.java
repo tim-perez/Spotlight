@@ -28,7 +28,7 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
     private OnChoiceActionListener listener;
     private int selectedPosition = -1;
     private boolean isReviewMode = false;
-    private java.util.Set<Integer> matchedPositions = new java.util.HashSet<>();
+    private java.util.Set<String> matchedAnswers = new java.util.HashSet<>();
 
     public AnswerChoiceAdapter(List<String> choices, OnChoiceActionListener listener) {
         this.choices = choices;
@@ -43,8 +43,8 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
         this.isReviewMode = reviewMode;
     }
 
-    public void setMatchedPositions(java.util.Set<Integer> matchedPositions) {
-        this.matchedPositions = matchedPositions;
+    public void setMatchedAnswers(java.util.Set<String> matchedAnswers) {
+        this.matchedAnswers = matchedAnswers;
         notifyDataSetChanged();
     }
 
@@ -65,7 +65,7 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
             holder.binding.buttonDelete.setVisibility(View.VISIBLE);
             holder.binding.getRoot().setOnClickListener(null);
             
-            if (matchedPositions.contains(position)) {
+            if (matchedAnswers.contains(choice)) {
                 holder.binding.getRoot().setBackgroundColor(Color.parseColor("#2E7D32")); // Darker Green
                 holder.binding.buttonMatch.setImageResource(android.R.drawable.checkbox_on_background);
             } else {

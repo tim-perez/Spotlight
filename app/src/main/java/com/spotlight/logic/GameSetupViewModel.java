@@ -52,4 +52,14 @@ public class GameSetupViewModel extends AndroidViewModel {
             players.setValue(currentPlayers);
         }
     }
+
+    public void updatePlayer(int position, String newName, int newColor) {
+        List<Player> currentPlayers = new ArrayList<>(players.getValue());
+        if (position >= 0 && position < currentPlayers.size()) {
+            Player player = currentPlayers.get(position);
+            player.setName(newName);
+            player.setAvatarColor(newColor);
+            players.setValue(currentPlayers);
+        }
+    }
 }

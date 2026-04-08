@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/background">
+
+    <EditText
+        android:id="@+id/editTextPlayerName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/hint_player_name"
+        android:textColorHint="#99FFFFFF"
+        android:textColor="@color/white"
+        android:inputType="textPersonName" />
+
+    <LinearLayout
+        android:id="@+id/layoutColors"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="16dp">
+
+        <View
+            android:id="@+id/colorBlue"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="4dp"
+            android:background="@color/avatar_blue"
+            android:tag="blue" />
+        <View
+            android:id="@+id/colorGreen"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="4dp"
+            android:background="@color/avatar_green"
+            android:tag="green" />
+        <View
+            android:id="@+id/colorOrange"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="4dp"
+            android:background="@color/avatar_orange"
+            android:tag="orange" />
+        <View
+            android:id="@+id/colorPurple"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="4dp"
+            android:background="@color/avatar_purple"
+            android:tag="purple" />
+        <View
+            android:id="@+id/colorRed"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="4dp"
+            android:background="@color/avatar_red"
+            android:tag="red" />
+        <View
+            android:id="@+id/colorTeal"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="4dp"
+            android:background="@color/avatar_teal"
+            android:tag="teal" />
+    </LinearLayout>
+</LinearLayout>

@@ -23,17 +23,17 @@
           <targets>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/timperez/.android/avd/Medium_Phone_2.avd" />
+                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/timperez/.android/avd/Optimal_Test_Device_2.avd" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/timperez/.android/avd/Medium_Phone_3.avd" />
+                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/timperez/.android/avd/Optimal_Test_Device.avd" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/timperez/.android/avd/Medium_Phone.avd" />
+                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/timperez/.android/avd/Optimal_Test_Device_3.avd" />
               </handle>
             </Target>
           </targets>

@@ -55,7 +55,7 @@ public class JoinRoomActivity extends AppCompatActivity {
 
         binding.buttonBack.setOnClickListener(v -> finish());
 
-        adapter = new PlayerAdapter(new ArrayList<>());
+        adapter = new PlayerAdapter(new ArrayList<>(), null);
         binding.recyclerViewJoinPlayers.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerViewJoinPlayers.setAdapter(adapter);
 

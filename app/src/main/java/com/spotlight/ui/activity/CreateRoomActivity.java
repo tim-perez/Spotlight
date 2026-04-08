@@ -62,7 +62,7 @@ public class CreateRoomActivity extends AppCompatActivity {
 
         binding.buttonBack.setOnClickListener(v -> finish());
 
-        adapter = new PlayerAdapter(new ArrayList<>());
+        adapter = new PlayerAdapter(new ArrayList<>(), null);
         binding.recyclerViewRoomPlayers.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerViewRoomPlayers.setAdapter(adapter);
 

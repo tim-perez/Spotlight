@@ -109,7 +109,7 @@
     <string name="phase_results">Results</string>
     <string name="phase_game_over_local">Game Over</string>
     <string name="button_exit_game">Exit Game</string>
-    <string name="review_prompt">Review and mark matches or delete duplicates:</string>
+    <string name="review_prompt">Do any of these answers match yours?</string>
     <string name="voting_prompt_format">%1$s, pick the Spotlight\'s answer:</string>
     <string name="error_choose_own_answer">You cannot choose your own answer</string>
 

@@ -47,7 +47,7 @@ public class GameViewModel extends AndroidViewModel {
     private int spotlightIndex = 0;
     private int currentPlayerIndex = 0;
     private final List<String> localAnswers = new ArrayList<>();
-    private final Set<Integer> localMatchedPlayerIndices = new HashSet<>();
+    private final Set<String> localMatchedAnswers = new HashSet<>();
     private final Set<Integer> localDeletedPlayerIndices = new HashSet<>();
     private final Map<Integer, String> localVotesMap = new HashMap<>();
 
@@ -112,16 +112,19 @@ public class GameViewModel extends AndroidViewModel {
             spotlightIndex = (spotlightIndex + 1) % players.getValue().size();
             spotlightPlayerIndex.setValue(spotlightIndex);
         } else {
+            // Start with the first player (the one who created/setup the game)
             spotlightIndex = 0;
             spotlightPlayerIndex.setValue(0);
+            logs.setValue(new ArrayList<>());
         }
+        
+        // Answering rotation starts with the Spotlight player
         currentPlayerIndex = spotlightIndex;
         localAnswers.clear();
         for (int i = 0; i < players.getValue().size(); i++) localAnswers.add(null);
-        localMatchedPlayerIndices.clear();
+        localMatchedAnswers.clear();
         localDeletedPlayerIndices.clear();
         localVotesMap.clear();
-        logs.setValue(new ArrayList<>());
 
         currentQuestion.setValue(questionRepository.getRandomQuestion());
         setPhase(Phase.WAITING_FOR_ANSWERS);
@@ -155,6 +158,7 @@ public class GameViewModel extends AndroidViewModel {
         localAnswers.set(currentPlayerIndex, answer);
         
         int nextPlayer = (currentPlayerIndex + 1) % players.getValue().size();
+        // The rotation is complete when it reaches back to the player who started (the Spotlight)
         if (nextPlayer == spotlightIndex) {
             // Everyone has answered
             prepareChoices();
@@ -176,11 +180,11 @@ public class GameViewModel extends AndroidViewModel {
         currentChoices.setValue(choices);
     }
 
-    public void toggleLocalMatch(int choiceIndex) {
-        if (localMatchedPlayerIndices.contains(choiceIndex)) {
-            localMatchedPlayerIndices.remove(choiceIndex);
+    public void toggleLocalMatch(String answer) {
+        if (localMatchedAnswers.contains(answer)) {
+            localMatchedAnswers.remove(answer);
         } else {
-            localMatchedPlayerIndices.add(choiceIndex);
+            localMatchedAnswers.add(answer);
         }
     }
 
@@ -211,19 +215,27 @@ public class GameViewModel extends AndroidViewModel {
 
     public void calculateLocalScores() {
         List<Player> playerList = players.getValue();
-        String spotlightAnswer = localAnswers.get(spotlightIndex);
-        List<String> choices = currentChoices.getValue();
+        if (playerList == null) return;
+        
+        int spotlightIdx = spotlightPlayerIndex.getValue();
+        String spotlightAnswer = localAnswers.get(spotlightIdx);
 
-        // 1. Matched answers (Spotlight identified their own)
-        for (int idx : localMatchedPlayerIndices) {
-            String matchedAnswer = choices.get(idx);
-            for (int i = 0; i < localAnswers.size(); i++) {
-                if (i != spotlightIndex && matchedAnswer.equals(localAnswers.get(i))) {
-                    // Spotlight matched someone else's answer - Spotlight gets 2, Player gets 0
-                    playerList.get(spotlightIndex).addScore(2);
-                    addLog(playerList.get(spotlightIndex).getName() + " matched " + playerList.get(i).getName() + "'s answer (+2)");
+        // 1. Matched answers (Spotlight identified their own answer among others)
+        // If the spotlight player detects one of the answers matches their answer,
+        // the player who matched gets +4, while everyone else receives +0.
+        if (!localMatchedAnswers.isEmpty()) {
+            for (String matchedAnswer : localMatchedAnswers) {
+                for (int i = 0; i < localAnswers.size(); i++) {
+                    if (i != spotlightIdx && matchedAnswer.equalsIgnoreCase(localAnswers.get(i))) {
+                        playerList.get(i).addScore(4);
+                        addLog(playerList.get(i).getName() + " matched the Spotlight's answer! (+4)");
+                    }
                 }
             }
+            // Round ends immediately if matches are found
+            players.setValue(playerList);
+            setPhase(Phase.RESULTS);
+            return;
         }
 
         // 2. Voting results
@@ -234,21 +246,35 @@ public class GameViewModel extends AndroidViewModel {
             if (votedAnswer.equals(spotlightAnswer)) {
                 // Guessed spotlight correctly
                 playerList.get(voterIdx).addScore(2);
-                playerList.get(spotlightIndex).addScore(1);
-                addLog(playerList.get(voterIdx).getName() + " correctly guessed " + playerList.get(spotlightIndex).getName() + "'s answer (+2 to guesser, +1 to spotlight)");
+                playerList.get(spotlightIdx).addScore(1);
+                addLog(playerList.get(voterIdx).getName() + " correctly guessed the Spotlight's answer! (+2 for guesser, +1 for Spotlight)");
             } else {
                 // Guessed someone else
                 for (int i = 0; i < localAnswers.size(); i++) {
-                    if (i != spotlightIndex && i != voterIdx && votedAnswer.equals(localAnswers.get(i))) {
+                    if (i != spotlightIdx && i != voterIdx && votedAnswer.equals(localAnswers.get(i))) {
                         playerList.get(i).addScore(1);
-                        addLog(playerList.get(voterIdx).getName() + " guessed " + playerList.get(i).getName() + "'s answer (+1 to " + playerList.get(i).getName() + ")");
+                        addLog(playerList.get(i).getName() + " was guessed by " + playerList.get(voterIdx).getName() + "! (+1)");
                     }
                 }
             }
         }
 
         players.setValue(playerList);
-        setPhase(Phase.RESULTS);
+
+        // Check if the game is completed (First to 25 points wins)
+        boolean gameCompleted = false;
+        for (Player p : playerList) {
+            if (p.getScore() >= 25) {
+                gameCompleted = true;
+                break;
+            }
+        }
+
+        if (gameCompleted) {
+            setPhase(Phase.FINISHED);
+        } else {
+            setPhase(Phase.RESULTS);
+        }
     }
 
     private void addLog(String message) {
@@ -268,9 +294,9 @@ public class GameViewModel extends AndroidViewModel {
 
             List<Player> playerList = new ArrayList<>(playerMap.values());
 
-            // Sort players by join timestamp in descending order (latest to host)
+            // Sort players by join timestamp in ascending order (host first, then others)
             List<Player> sortedPlayers = new ArrayList<>(playerList);
-            Collections.sort(sortedPlayers, (p1, p2) -> Long.compare(p2.getJoinTimestamp(), p1.getJoinTimestamp()));
+            Collections.sort(sortedPlayers, (p1, p2) -> Long.compare(p1.getJoinTimestamp(), p2.getJoinTimestamp()));
 
             String currentSpotlightId = room.getSpotlightPlayerId();
 
@@ -323,8 +349,7 @@ public class GameViewModel extends AndroidViewModel {
                             if (!pId.equals(spotlightId) && matchedAnswer.equals(entry.getValue())) {
                                 if (playerMap.containsKey(pId)) {
                                     playerMap.get(pId).addScore(4);
-                                    playerMap.get(spotlightId).addScore(2);
-                                    logsList.add(playerMap.get(pId).getName() + " matched the Spotlight's answer in Review! +4 (Spotlight +2)");
+                                    logsList.add(playerMap.get(pId).getName() + " matched the Spotlight's answer in Review! (+4)");
                                 }
                             }
                         }
@@ -338,15 +363,13 @@ public class GameViewModel extends AndroidViewModel {
                         String votedAnswer = entry.getValue();
 
                         if (votedAnswer.equals(spotlightAnswer)) {
-                            playerMap.get(voterId).addScore(2);
-                            playerMap.get(spotlightId).addScore(1);
-                            logsList.add(playerMap.get(voterId).getName() + " correctly guessed " + playerMap.get(spotlightId).getName() + "'s answer (+2 to guesser, +1 to spotlight)");
+                            playerMap.get(voterId).addScore(4);
+                            logsList.add(playerMap.get(voterId).getName() + " correctly guessed " + playerMap.get(spotlightId).getName() + "'s answer (+4)");
                         } else {
                             for (Map.Entry<String, String> guessEntry : guesses.entrySet()) {
                                 String targetId = guessEntry.getKey();
                                 if (!targetId.equals(spotlightId) && !targetId.equals(voterId) && votedAnswer.equals(guessEntry.getValue())) {
-                                    playerMap.get(targetId).addScore(1);
-                                    logsList.add(playerMap.get(voterId).getName() + " guessed " + playerMap.get(targetId).getName() + "'s answer (+1 to " + playerMap.get(targetId).getName() + ")");
+                                    logsList.add(playerMap.get(voterId).getName() + " guessed " + playerMap.get(targetId).getName() + "'s answer");
                                 }
                             }
                         }
@@ -355,7 +378,17 @@ public class GameViewModel extends AndroidViewModel {
 
                 Map<String, Object> updates = new HashMap<>();
                 updates.put("players", playerMap);
-                updates.put("status", "RESULTS");
+
+                // Check if the game is completed (First to 25 points wins)
+                boolean gameCompleted = false;
+                for (Player p : playerMap.values()) {
+                    if (p.getScore() >= 25) {
+                        gameCompleted = true;
+                        break;
+                    }
+                }
+
+                updates.put("status", gameCompleted ? "FINISHED" : "RESULTS");
                 updates.put("logs", logsList);
                 gameRepository.updateRoom(updates);
             }
@@ -387,8 +420,8 @@ public class GameViewModel extends AndroidViewModel {
         return localAnswers;
     }
 
-    public Set<Integer> getLocalMatchedPlayerIndices() {
-        return localMatchedPlayerIndices;
+    public Set<String> getLocalMatchedAnswers() {
+        return localMatchedAnswers;
     }
 
     public Set<Integer> getLocalDeletedPlayerIndices() {

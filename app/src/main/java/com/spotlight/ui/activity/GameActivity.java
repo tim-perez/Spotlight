@@ -378,7 +378,11 @@ public class GameActivity extends AppCompatActivity {
         } else if (currentPhase == Phase.FINISHED) {
             finish();
         } else if (currentPhase == Phase.REVIEW) {
-            viewModel.startVotingLocal();
+            if (!viewModel.getLocalMatchedAnswers().isEmpty() || !viewModel.getLocalDeletedPlayerIndices().isEmpty()) {
+                viewModel.calculateLocalScores();
+            } else {
+                viewModel.startVotingLocal();
+            }
         }
     }
 
@@ -482,25 +486,13 @@ public class GameActivity extends AppCompatActivity {
                 }
                 binding.buttonAction.setText(multiplayerMatchedAnswers.isEmpty() ? getString(R.string.button_start_voting) : getString(R.string.button_reveal_results));
                 
-                Set<Integer> matchedIndices = new HashSet<>();
-                for (int i = 0; i < choices.size(); i++) {
-                    if (multiplayerMatchedAnswers.contains(choices.get(i))) {
-                        matchedIndices.add(i);
-                    }
-                }
-                adapter.setMatchedPositions(matchedIndices);
+                adapter.setMatchedAnswers(multiplayerMatchedAnswers);
             }
         });
         adapter.setReviewMode(true);
         
         // Restore previous matches if any (e.g. UI recreation)
-        Set<Integer> matchedIndices = new HashSet<>();
-        for (int i = 0; i < choices.size(); i++) {
-            if (multiplayerMatchedAnswers.contains(choices.get(i))) {
-                matchedIndices.add(i);
-            }
-        }
-        adapter.setMatchedPositions(matchedIndices);
+        adapter.setMatchedAnswers(multiplayerMatchedAnswers);
 
         binding.recyclerViewChoices.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerViewChoices.setAdapter(adapter);
@@ -508,8 +500,9 @@ public class GameActivity extends AppCompatActivity {
 
     private void prepareLocalReviewUI() {
         binding.layoutSelection.setVisibility(View.VISIBLE);
+        binding.textViewSelectionPrompt.setText(R.string.review_prompt);
         binding.buttonAction.setVisibility(View.VISIBLE);
-        binding.buttonAction.setText(viewModel.getLocalMatchedPlayerIndices().isEmpty() ? R.string.button_start_voting : R.string.button_reveal_results);
+        binding.buttonAction.setText(viewModel.getLocalMatchedAnswers().isEmpty() ? R.string.button_start_voting : R.string.button_reveal_results);
         binding.buttonAction.setEnabled(true);
         
         List<String> choices = viewModel.getCurrentChoices().getValue();
@@ -520,20 +513,20 @@ public class GameActivity extends AppCompatActivity {
 
             @Override
             public void onMatchClicked(String choice, int position) {
-                viewModel.toggleLocalMatch(position);
-                binding.buttonAction.setText(viewModel.getLocalMatchedPlayerIndices().isEmpty() ? R.string.button_start_voting : R.string.button_reveal_results);
-                adapter.setMatchedPositions(viewModel.getLocalMatchedPlayerIndices());
+                viewModel.toggleLocalMatch(choice);
+                binding.buttonAction.setText(viewModel.getLocalMatchedAnswers().isEmpty() ? R.string.button_start_voting : R.string.button_reveal_results);
+                adapter.setMatchedAnswers(viewModel.getLocalMatchedAnswers());
             }
 
             @Override
             public void onDeleteClicked(int position) {
                 viewModel.deleteLocalChoice(position);
-                binding.buttonAction.setText((viewModel.getLocalMatchedPlayerIndices().isEmpty() && viewModel.getLocalDeletedPlayerIndices().isEmpty()) ? R.string.button_start_voting : R.string.button_reveal_results);
+                binding.buttonAction.setText((viewModel.getLocalMatchedAnswers().isEmpty() && viewModel.getLocalDeletedPlayerIndices().isEmpty()) ? R.string.button_start_voting : R.string.button_reveal_results);
                 adapter.notifyItemChanged(position);
             }
         });
         adapter.setReviewMode(true);
-        adapter.setMatchedPositions(viewModel.getLocalMatchedPlayerIndices());
+        adapter.setMatchedAnswers(viewModel.getLocalMatchedAnswers());
         binding.recyclerViewChoices.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerViewChoices.setAdapter(adapter);
     }
@@ -542,7 +535,12 @@ public class GameActivity extends AppCompatActivity {
         binding.layoutSelection.setVisibility(View.VISIBLE);
         binding.textViewSelectionPrompt.setText(getString(R.string.voting_prompt_format, players.get(viewModel.getCurrentPlayerIndex()).getName()));
         
-        List<String> choices = viewModel.getCurrentChoices().getValue();
+        List<String> choices = new ArrayList<>(viewModel.getCurrentChoices().getValue());
+        String playerAnswer = viewModel.getLocalAnswers().get(viewModel.getCurrentPlayerIndex());
+        choices.remove(playerAnswer);
+        choices.add(viewModel.getLocalAnswers().get(viewModel.getSpotlightPlayerIndex().getValue()));
+        Collections.shuffle(choices);
+
         AnswerChoiceAdapter adapter = new AnswerChoiceAdapter(choices, new AnswerChoiceAdapter.OnChoiceActionListener() {
             @Override
             public void onChoiceSelected(String choice) {
