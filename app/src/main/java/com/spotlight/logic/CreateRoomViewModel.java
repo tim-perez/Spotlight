@@ -9,14 +9,18 @@ import androidx.lifecycle.MutableLiveData;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-import java.util.HashMap;
-import java.util.Map;
 
 public class CreateRoomViewModel extends AndroidViewModel {
 
     private final GameRepository repository;
+    private final QuestionRepository questionRepository;
     private final MutableLiveData<GameRoom> roomData = new MutableLiveData<>();
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isRoomCreated = new MutableLiveData<>(false);
@@ -27,6 +31,7 @@ public class CreateRoomViewModel extends AndroidViewModel {
     public CreateRoomViewModel(@NonNull Application application) {
         super(application);
         repository = new GameRepository();
+        questionRepository = new QuestionRepository(application);
     }
 
     public void createRoom(String hostName, int avatarColor) {
@@ -35,6 +40,7 @@ public class CreateRoomViewModel extends AndroidViewModel {
         
         Player host = new Player(playerId, hostName);
         host.setAvatarColor(avatarColor);
+        host.setJoinTimestamp(System.currentTimeMillis());
         
         GameRoom room = new GameRoom(roomCode, playerId);
         
@@ -61,9 +67,23 @@ public class CreateRoomViewModel extends AndroidViewModel {
     }
 
     public void startGame(String category) {
+        GameRoom room = roomData.getValue();
+        if (room == null) return;
+
+        questionRepository.filterByCategory(category);
+        String initialQuestion = questionRepository.getRandomQuestion().getText();
+
+        // Start with the player who joined last
+        List<Player> playersList = new ArrayList<>(room.getPlayers().values());
+        Collections.sort(playersList, (p1, p2) -> Long.compare(p2.getJoinTimestamp(), p1.getJoinTimestamp()));
+        String spotlightId = !playersList.isEmpty() ? playersList.get(0).getId() : room.getHostId();
+
         Map<String, Object> updates = new HashMap<>();
         updates.put("status", "IN_PROGRESS");
         updates.put("category", category);
+        updates.put("spotlightPlayerId", spotlightId);
+        updates.put("currentQuestion", initialQuestion);
+
         repository.updateRoom(updates);
     }
 

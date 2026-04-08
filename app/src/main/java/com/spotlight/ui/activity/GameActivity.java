@@ -50,7 +50,7 @@ public class GameActivity extends AppCompatActivity {
     private String playerId;
     private String hostId;
     
-    private Set<Integer> multiplayerMatchedIndices = new HashSet<>();
+    private Set<String> multiplayerMatchedAnswers = new HashSet<>();
     private Phase lastProcessedPhase = null;
 
     private MediaPlayer mediaPlayerCorrect, mediaPlayerReveal;
@@ -66,7 +66,6 @@ public class GameActivity extends AppCompatActivity {
 
         initFromIntent();
         initViews();
-        setupObservers();
 
         if (players == null || players.isEmpty()) {
             Toast.makeText(this, R.string.error_no_players, Toast.LENGTH_SHORT).show();
@@ -76,7 +75,8 @@ public class GameActivity extends AppCompatActivity {
 
         String category = getIntent().getStringExtra("category");
         viewModel.init(isMultiplayer, roomCode, playerId, hostId, players, category);
-        
+        setupObservers();
+
         if (isMultiplayer) {
             roomRef = FirebaseDatabase.getInstance().getReference("rooms").child(roomCode);
         }
@@ -194,6 +194,12 @@ public class GameActivity extends AppCompatActivity {
     private void handleRoomUpdate(GameRoom room) {
         String status = room.getStatus();
         String spotlightId = room.getSpotlightPlayerId();
+
+        if (status == null) return;
+
+        if (room.getPlayers() != null) {
+            viewModel.setPlayers(new ArrayList<>(room.getPlayers().values()));
+        }
         
         Phase phase = Phase.WAITING_FOR_ANSWERS;
         if ("REVIEW".equals(status)) phase = Phase.REVIEW;
@@ -203,19 +209,33 @@ public class GameActivity extends AppCompatActivity {
 
         viewModel.setPhase(phase);
         
+        if (phase == Phase.WAITING_FOR_ANSWERS && viewModel.isHost()) {
+            Map<String, String> guesses = room.getGuesses();
+            if (guesses != null && guesses.size() == room.getPlayers().size() && room.getPlayers().size() > 0) {
+                roomRef.child("status").setValue("REVIEW");
+            }
+        }
+
         if (phase == Phase.VOTING && viewModel.isHost()) {
             Map<String, String> votes = room.getVotes();
             Map<String, Player> playersMap = room.getPlayers();
-            if (votes != null && votes.size() == playersMap.size() - 1) {
+            if (votes != null && votes.size() == playersMap.size() - 1 && playersMap.size() > 1) {
                 // All players (except spotlight) have voted
                 viewModel.calculateMultiplayerScores(null);
             }
         }
 
-        Player spotlightPlayer = room.getPlayers().get(spotlightId);
-        if (spotlightPlayer != null) {
-            updateMultiplayerUI(room, spotlightPlayer);
-            updateSpotlightAvatar(spotlightPlayer);
+        if (spotlightId != null) {
+            Player spotlightPlayer = room.getPlayers().get(spotlightId);
+            if (spotlightPlayer != null) {
+                if (room.getCurrentQuestion() != null) {
+                    binding.textViewQuestion.setText(room.getCurrentQuestion());
+                    viewModel.setCurrentQuestion(room.getCurrentQuestion());
+                }
+                viewModel.setSpotlightPlayerId(spotlightId);
+                updateMultiplayerUI(room, spotlightPlayer);
+                updateSpotlightAvatar(spotlightPlayer);
+            }
         }
     }
 
@@ -255,7 +275,7 @@ public class GameActivity extends AppCompatActivity {
                     prepareReviewUI(room);
                     binding.buttonAction.setVisibility(View.VISIBLE);
                     binding.buttonAction.setEnabled(true);
-                    binding.buttonAction.setText(multiplayerMatchedIndices.isEmpty() ? getString(R.string.button_start_voting) : getString(R.string.button_reveal_results));
+                    binding.buttonAction.setText(multiplayerMatchedAnswers.isEmpty() ? getString(R.string.button_start_voting) : getString(R.string.button_reveal_results));
                 } else {
                     binding.textViewQuestion.setText(R.string.spotlight_reviewing);
                 }
@@ -341,12 +361,13 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void handleMultiplayerAction() {
-        if (viewModel.getCurrentPhase().getValue() == Phase.REVIEW) {
+        Phase currentPhase = viewModel.getCurrentPhase().getValue();
+        if (currentPhase == Phase.REVIEW) {
             startVotingPhase();
-        } else if (viewModel.getCurrentPhase().getValue() == Phase.FINISHED && viewModel.isHost()) {
-            finish();
-        } else if (viewModel.isHost()) {
+        } else if (currentPhase == Phase.RESULTS && viewModel.isHost()) {
             startNextMultiplayerRound();
+        } else if (currentPhase == Phase.FINISHED) {
+            finish();
         }
     }
 
@@ -382,9 +403,9 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void startVotingPhase() {
-        if (!multiplayerMatchedIndices.isEmpty()) {
+        if (!multiplayerMatchedAnswers.isEmpty()) {
             // Logic to calculate scores directly if spotlight matched some answers
-            viewModel.calculateMultiplayerScores(multiplayerMatchedIndices);
+            viewModel.calculateMultiplayerScores(multiplayerMatchedAnswers);
         } else {
             roomRef.child("status").setValue("VOTING");
         }
@@ -437,7 +458,14 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void prepareReviewUI(GameRoom room) {
-        List<String> choices = new ArrayList<>(room.getGuesses().values());
+        Map<String, String> allGuesses = room.getGuesses();
+        String spotlightId = room.getSpotlightPlayerId();
+        final List<String> choices = new ArrayList<>();
+        for (Map.Entry<String, String> entry : allGuesses.entrySet()) {
+            if (!entry.getKey().equals(spotlightId)) {
+                choices.add(entry.getValue());
+            }
+        }
         Collections.shuffle(choices);
         
         final AnswerChoiceAdapter adapter = new AnswerChoiceAdapter(choices, null);
@@ -447,16 +475,33 @@ public class GameActivity extends AppCompatActivity {
 
             @Override
             public void onMatchClicked(String choice, int position) {
-                if (multiplayerMatchedIndices.contains(position)) {
-                    multiplayerMatchedIndices.remove(position);
+                if (multiplayerMatchedAnswers.contains(choice)) {
+                    multiplayerMatchedAnswers.remove(choice);
                 } else {
-                    multiplayerMatchedIndices.add(position);
+                    multiplayerMatchedAnswers.add(choice);
                 }
-                binding.buttonAction.setText(multiplayerMatchedIndices.isEmpty() ? getString(R.string.button_start_voting) : getString(R.string.button_reveal_results));
-                adapter.setMatchedPositions(multiplayerMatchedIndices);
+                binding.buttonAction.setText(multiplayerMatchedAnswers.isEmpty() ? getString(R.string.button_start_voting) : getString(R.string.button_reveal_results));
+                
+                Set<Integer> matchedIndices = new HashSet<>();
+                for (int i = 0; i < choices.size(); i++) {
+                    if (multiplayerMatchedAnswers.contains(choices.get(i))) {
+                        matchedIndices.add(i);
+                    }
+                }
+                adapter.setMatchedPositions(matchedIndices);
             }
         });
         adapter.setReviewMode(true);
+        
+        // Restore previous matches if any (e.g. UI recreation)
+        Set<Integer> matchedIndices = new HashSet<>();
+        for (int i = 0; i < choices.size(); i++) {
+            if (multiplayerMatchedAnswers.contains(choices.get(i))) {
+                matchedIndices.add(i);
+            }
+        }
+        adapter.setMatchedPositions(matchedIndices);
+
         binding.recyclerViewChoices.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerViewChoices.setAdapter(adapter);
     }

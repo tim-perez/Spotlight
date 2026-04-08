@@ -34,6 +34,7 @@ public class JoinRoomViewModel extends AndroidViewModel {
         
         Player player = new Player(playerId, playerName);
         player.setAvatarColor(avatarColor);
+        player.setJoinTimestamp(System.currentTimeMillis());
 
         statusText.setValue("Joining...");
         repository.joinRoom(this.roomCode, player, new GameRepository.OnJoinResultListener() {

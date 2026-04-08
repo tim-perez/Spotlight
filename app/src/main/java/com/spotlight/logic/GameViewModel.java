@@ -131,6 +131,26 @@ public class GameViewModel extends AndroidViewModel {
         currentPhase.setValue(phase);
     }
 
+    public void setPlayers(List<Player> playerList) {
+        this.players.setValue(playerList);
+    }
+
+    public void setCurrentQuestion(String questionText) {
+        this.currentQuestion.setValue(new Question(questionText, ""));
+    }
+
+    public void setSpotlightPlayerId(String spotlightId) {
+        List<Player> playerList = players.getValue();
+        if (playerList != null && spotlightId != null) {
+            for (int i = 0; i < playerList.size(); i++) {
+                if (playerList.get(i).getId().equals(spotlightId)) {
+                    spotlightPlayerIndex.setValue(i);
+                    break;
+                }
+            }
+        }
+    }
+
     public void submitLocalAnswer(String answer) {
         localAnswers.set(currentPlayerIndex, answer);
         
@@ -147,8 +167,10 @@ public class GameViewModel extends AndroidViewModel {
 
     private void prepareChoices() {
         List<String> choices = new ArrayList<>();
-        for (String ans : localAnswers) {
-            if (ans != null) choices.add(ans);
+        for (int i = 0; i < localAnswers.size(); i++) {
+            if (i != spotlightIndex && localAnswers.get(i) != null) {
+                choices.add(localAnswers.get(i));
+            }
         }
         Collections.shuffle(choices);
         currentChoices.setValue(choices);
@@ -237,54 +259,73 @@ public class GameViewModel extends AndroidViewModel {
 
     public void startNextMultiplayerRound() {
         if (!isMultiplayer) return;
-        
-        List<Player> playerList = players.getValue();
-        int nextSpotlightIndex = (spotlightPlayerIndex.getValue() + 1) % playerList.size();
-        String nextSpotlightId = playerList.get(nextSpotlightIndex).getId();
-        Question nextQuestion = questionRepository.getRandomQuestion();
 
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("status", "WAITING_FOR_ANSWERS");
-        updates.put("spotlightPlayerId", nextSpotlightId);
-        updates.put("currentQuestion", nextQuestion.getText());
-        updates.put("guesses", null);
-        updates.put("votes", null);
-        
-        // Update local players in Firebase too if scores changed
-        Map<String, Object> playerUpdates = new HashMap<>();
-        for (Player p : playerList) {
-            playerUpdates.put(p.getId(), p);
-        }
-        updates.put("players", playerUpdates);
+        gameRepository.getRoomDataOnce(roomCode, room -> {
+            if (room == null) return;
 
-        gameRepository.updateRoom(updates);
+            Map<String, Player> playerMap = room.getPlayers();
+            if (playerMap == null || playerMap.isEmpty()) return;
+
+            List<Player> playerList = new ArrayList<>(playerMap.values());
+
+            // Sort players by join timestamp in descending order (latest to host)
+            List<Player> sortedPlayers = new ArrayList<>(playerList);
+            Collections.sort(sortedPlayers, (p1, p2) -> Long.compare(p2.getJoinTimestamp(), p1.getJoinTimestamp()));
+
+            String currentSpotlightId = room.getSpotlightPlayerId();
+
+            int currentSortedIndex = -1;
+            if (currentSpotlightId != null) {
+                for (int i = 0; i < sortedPlayers.size(); i++) {
+                    if (sortedPlayers.get(i).getId().equals(currentSpotlightId)) {
+                        currentSortedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            int nextSortedIndex = (currentSortedIndex + 1) % sortedPlayers.size();
+            String nextSpotlightId = sortedPlayers.get(nextSortedIndex).getId();
+            Question nextQuestion = questionRepository.getRandomQuestion();
+
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("status", "WAITING_FOR_ANSWERS");
+            updates.put("spotlightPlayerId", nextSpotlightId);
+            updates.put("currentQuestion", nextQuestion.getText());
+            updates.put("guesses", null);
+            updates.put("votes", null);
+            updates.put("players", playerMap);
+
+            gameRepository.updateRoom(updates);
+        });
     }
 
-    public void calculateMultiplayerScores(Set<Integer> matchedIndices) {
-        if (!isHost()) return;
-
+    public void calculateMultiplayerScores(Set<String> matchedAnswers) {
         gameRepository.getRoomDataOnce(roomCode, new GameRepository.OnRoomDataListener() {
             @Override
             public void onDataChange(GameRoom room) {
                 if (room == null) return;
 
+                String spotlightId = room.getSpotlightPlayerId();
+                if (playerId == null || !playerId.equals(spotlightId)) return;
+
                 Map<String, Player> playerMap = room.getPlayers();
                 Map<String, String> guesses = room.getGuesses();
                 Map<String, String> votes = room.getVotes();
-                String spotlightId = room.getSpotlightPlayerId();
                 String spotlightAnswer = guesses.get(spotlightId);
                 List<String> logsList = new ArrayList<>();
 
                 // 1. Handle matches from Spotlight
-                if (matchedIndices != null && !matchedIndices.isEmpty()) {
-                    List<String> choices = new ArrayList<>(guesses.values());
-                    for (int idx : matchedIndices) {
-                        String matchedAnswer = choices.get(idx);
+                if (matchedAnswers != null && !matchedAnswers.isEmpty()) {
+                    for (String matchedAnswer : matchedAnswers) {
                         for (Map.Entry<String, String> entry : guesses.entrySet()) {
                             String pId = entry.getKey();
                             if (!pId.equals(spotlightId) && matchedAnswer.equals(entry.getValue())) {
-                                playerMap.get(spotlightId).addScore(2);
-                                logsList.add(playerMap.get(spotlightId).getName() + " matched " + playerMap.get(pId).getName() + "'s answer (+2)");
+                                if (playerMap.containsKey(pId)) {
+                                    playerMap.get(pId).addScore(4);
+                                    playerMap.get(spotlightId).addScore(2);
+                                    logsList.add(playerMap.get(pId).getName() + " matched the Spotlight's answer in Review! +4 (Spotlight +2)");
+                                }
                             }
                         }
                     }
