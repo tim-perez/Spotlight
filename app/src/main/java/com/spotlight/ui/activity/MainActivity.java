@@ -1,16 +1,12 @@
-package com.spotlight;
+package com.spotlight.ui.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.TextView;
+import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.cardview.widget.CardView;
 
-import com.airbnb.lottie.LottieAnimationView;
+import com.spotlight.R;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -22,7 +18,6 @@ public class MainActivity extends AppCompatActivity {
         CardView buttonPassAndPlay = findViewById(R.id.buttonPassAndPlay);
         CardView buttonMultiplayer = findViewById(R.id.buttonMultiplayer);
         TextView textViewTitle = findViewById(R.id.textViewTitle);
-        LottieAnimationView animationViewBackground = findViewById(R.id.animationViewBackground);
 
         // Simple entrance animation for buttons
         buttonPassAndPlay.setAlpha(0f);
@@ -42,18 +37,5 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, MultiplayerMenuActivity.class);
             startActivity(intent);
         });
-
-        // Ensure background animation is handled safely
-        try {
-            if (animationViewBackground != null) {
-                animationViewBackground.setFailureListener(result -> {
-                    animationViewBackground.setVisibility(View.GONE);
-                });
-            }
-        } catch (Exception e) {
-            if (animationViewBackground != null) {
-                animationViewBackground.setVisibility(View.GONE);
-            }
-        }
     }
 }

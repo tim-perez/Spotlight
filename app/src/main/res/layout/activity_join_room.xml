@@ -107,6 +107,13 @@
             android:layout_margin="4dp"
             android:background="@color/avatar_teal"
             android:tag="teal" />
+        <View
+            android:id="@+id/colorPink"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="4dp"
+            android:background="@color/avatar_pink"
+            android:tag="pink" />
 
     </LinearLayout>
 

@@ -1,4 +1,4 @@
-package com.spotlight;
+package com.spotlight.ui.activity;
 
 import android.os.Bundle;
 import android.view.View;
@@ -18,10 +18,14 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.spotlight.R;
 import com.spotlight.logic.QuestionRepository;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 import com.spotlight.model.Question;
+import com.spotlight.ui.adapter.AnswerChoiceAdapter;
+import com.spotlight.ui.adapter.ResultAdapter;
+import com.spotlight.util.AvatarUtils;
 
 import android.media.MediaPlayer;
 import android.os.Handler;
@@ -228,14 +232,9 @@ public class GameActivity extends AppCompatActivity {
 
     private void updateSpotlightAvatar(Player spotlightPlayer) {
         View viewSpotlightAvatar = findViewById(R.id.viewSpotlightAvatar);
-        if (viewSpotlightAvatar != null && spotlightPlayer.getAvatarColor() != 0) {
-            android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
-            drawable.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-            drawable.setColor(spotlightPlayer.getAvatarColor());
-            viewSpotlightAvatar.setBackground(drawable);
-            viewSpotlightAvatar.setVisibility(View.VISIBLE);
-        } else if (viewSpotlightAvatar != null) {
-            viewSpotlightAvatar.setVisibility(View.GONE);
+        if (viewSpotlightAvatar != null) {
+            AvatarUtils.setAvatarColor(viewSpotlightAvatar, spotlightPlayer.getAvatarColor());
+            viewSpotlightAvatar.setVisibility(spotlightPlayer.getAvatarColor() != 0 ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -971,12 +970,9 @@ public class GameActivity extends AppCompatActivity {
             }
         }
         
-        if (targetPlayer != null && targetPlayer.getAvatarColor() != 0) {
-            android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
-            drawable.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-            drawable.setColor(targetPlayer.getAvatarColor());
-            viewPassToAvatar.setBackground(drawable);
-            viewPassToAvatar.setVisibility(View.VISIBLE);
+        if (targetPlayer != null) {
+            AvatarUtils.setAvatarColor(viewPassToAvatar, targetPlayer.getAvatarColor());
+            viewPassToAvatar.setVisibility(targetPlayer.getAvatarColor() != 0 ? View.VISIBLE : View.GONE);
         } else {
             viewPassToAvatar.setVisibility(View.GONE);
         }

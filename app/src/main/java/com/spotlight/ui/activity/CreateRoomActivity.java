@@ -1,4 +1,4 @@
-package com.spotlight;
+package com.spotlight.ui.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -21,9 +21,12 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.spotlight.R;
 import com.spotlight.logic.QuestionRepository;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
+import com.spotlight.ui.adapter.PlayerAdapter;
+import com.spotlight.util.AvatarUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +60,17 @@ public class CreateRoomActivity extends AppCompatActivity {
         spinnerCategory = findViewById(R.id.spinnerCategory);
         View buttonBack = findViewById(R.id.buttonBack);
 
-        setupColorSelection();
+        colorViews = new View[]{
+                findViewById(R.id.colorBlue),
+                findViewById(R.id.colorGreen),
+                findViewById(R.id.colorOrange),
+                findViewById(R.id.colorPurple),
+                findViewById(R.id.colorRed),
+                findViewById(R.id.colorTeal),
+                findViewById(R.id.colorPink)
+        };
+        AvatarUtils.setupColorSelection(this, colorViews, color -> selectedColor = color);
+        AvatarUtils.resetColorSelection(colorViews);
 
         questionRepository = new QuestionRepository(this);
         ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, questionRepository.getCategories());
@@ -113,53 +126,6 @@ public class CreateRoomActivity extends AppCompatActivity {
             intent.putExtra("category", selectedCategory);
             startActivity(intent);
         });
-    }
-
-    private void setupColorSelection() {
-        colorViews = new View[]{
-                findViewById(R.id.colorBlue),
-                findViewById(R.id.colorGreen),
-                findViewById(R.id.colorOrange),
-                findViewById(R.id.colorPurple),
-                findViewById(R.id.colorRed),
-                findViewById(R.id.colorTeal),
-                findViewById(R.id.colorPink)
-        };
-
-        for (View v : colorViews) {
-            v.setOnClickListener(view -> {
-                for (View other : colorViews) {
-                    other.setScaleX(1.0f);
-                    other.setScaleY(1.0f);
-                    other.setAlpha(0.6f);
-                }
-                view.setScaleX(1.2f);
-                view.setScaleY(1.2f);
-                view.setAlpha(1.0f);
-
-                int colorResId = 0;
-                String tag = (String) view.getTag();
-                if ("blue".equals(tag)) colorResId = R.color.avatar_blue;
-                else if ("green".equals(tag)) colorResId = R.color.avatar_green;
-                else if ("orange".equals(tag)) colorResId = R.color.avatar_orange;
-                else if ("purple".equals(tag)) colorResId = R.color.avatar_purple;
-                else if ("red".equals(tag)) colorResId = R.color.avatar_red;
-                else if ("teal".equals(tag)) colorResId = R.color.avatar_teal;
-                else if ("pink".equals(tag)) colorResId = R.color.avatar_pink;
-
-                selectedColor = getColor(colorResId);
-            });
-        }
-        resetColorSelection();
-    }
-
-    private void resetColorSelection() {
-        for (View v : colorViews) {
-            v.setScaleX(1.0f);
-            v.setScaleY(1.0f);
-            v.setAlpha(0.6f);
-        }
-        colorViews[0].performClick();
     }
 
     private void createRoomInFirebase(String hostName) {

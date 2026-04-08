@@ -1,4 +1,4 @@
-package com.spotlight;
+package com.spotlight.ui.adapter;
 
 import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.spotlight.R;
 import com.spotlight.model.Player;
 
 import java.util.List;

@@ -1,10 +1,12 @@
-package com.spotlight;
+package com.spotlight.ui.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.spotlight.R;
 
 public class MultiplayerMenuActivity extends AppCompatActivity {
 

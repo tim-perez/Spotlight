@@ -11,18 +11,18 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Spotlight">
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.activity.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".GameSetupActivity" />
-        <activity android:name=".GameActivity" />
-        <activity android:name=".MultiplayerMenuActivity" />
-        <activity android:name=".CreateRoomActivity" />
-        <activity android:name=".JoinRoomActivity" />
+        <activity android:name=".ui.activity.GameSetupActivity" />
+        <activity android:name=".ui.activity.GameActivity" />
+        <activity android:name=".ui.activity.MultiplayerMenuActivity" />
+        <activity android:name=".ui.activity.CreateRoomActivity" />
+        <activity android:name=".ui.activity.JoinRoomActivity" />
     </application>
 
 </manifest>
