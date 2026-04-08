@@ -118,6 +118,12 @@ public class CreateRoomViewModel extends AndroidViewModel {
         return roomCode;
     }
 
+    public void leaveRoom() {
+        if (roomCode != null && playerId != null) {
+            repository.removePlayer(playerId);
+        }
+    }
+
     @Override
     protected void onCleared() {
         super.onCleared();

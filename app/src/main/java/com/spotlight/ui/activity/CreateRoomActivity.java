@@ -60,7 +60,10 @@ public class CreateRoomActivity extends AppCompatActivity {
         categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         binding.spinnerCategory.setAdapter(categoryAdapter);
 
-        binding.buttonBack.setOnClickListener(v -> finish());
+        binding.buttonBack.setOnClickListener(v -> {
+            viewModel.leaveRoom();
+            finish();
+        });
 
         adapter = new PlayerAdapter(new ArrayList<>(), null);
         binding.recyclerViewRoomPlayers.setLayoutManager(new LinearLayoutManager(this));
@@ -124,5 +127,11 @@ public class CreateRoomActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    @Override
+    public void onBackPressed() {
+        viewModel.leaveRoom();
+        super.onBackPressed();
     }
 }

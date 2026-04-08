@@ -53,7 +53,10 @@ public class JoinRoomActivity extends AppCompatActivity {
         AvatarUtils.setupColorSelection(this, colorViews, color -> selectedColor = color);
         AvatarUtils.resetColorSelection(colorViews);
 
-        binding.buttonBack.setOnClickListener(v -> finish());
+        binding.buttonBack.setOnClickListener(v -> {
+            viewModel.leaveRoom();
+            finish();
+        });
 
         adapter = new PlayerAdapter(new ArrayList<>(), null);
         binding.recyclerViewJoinPlayers.setLayoutManager(new LinearLayoutManager(this));
@@ -120,5 +123,11 @@ public class JoinRoomActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    @Override
+    public void onBackPressed() {
+        viewModel.leaveRoom();
+        super.onBackPressed();
     }
 }
