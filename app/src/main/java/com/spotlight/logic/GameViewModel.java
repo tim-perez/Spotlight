@@ -35,6 +35,7 @@ public class GameViewModel extends AndroidViewModel {
     private final MutableLiveData<Question> currentQuestion = new MutableLiveData<>();
     private final MutableLiveData<List<Player>> players = new MutableLiveData<>();
     private final MutableLiveData<Integer> spotlightPlayerIndex = new MutableLiveData<>(0);
+    private final MutableLiveData<Integer> currentPlayerIndexLiveData = new MutableLiveData<>(0);
     private final MutableLiveData<List<String>> logs = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<List<String>> currentChoices = new MutableLiveData<>(new ArrayList<>());
 
@@ -107,6 +108,10 @@ public class GameViewModel extends AndroidViewModel {
         return currentChoices;
     }
 
+    public LiveData<Integer> getCurrentPlayerIndexLiveData() {
+        return currentPlayerIndexLiveData;
+    }
+
     public void startNewRoundLocal() {
         if (currentPhase.getValue() != null && currentPhase.getValue() != Phase.FINISHED) {
             spotlightIndex = (spotlightIndex + 1) % players.getValue().size();
@@ -120,6 +125,7 @@ public class GameViewModel extends AndroidViewModel {
         
         // Answering rotation starts with the Spotlight player
         currentPlayerIndex = spotlightIndex;
+        currentPlayerIndexLiveData.setValue(currentPlayerIndex);
         localAnswers.clear();
         for (int i = 0; i < players.getValue().size(); i++) localAnswers.add(null);
         localMatchedAnswers.clear();
@@ -140,6 +146,10 @@ public class GameViewModel extends AndroidViewModel {
 
     public void setCurrentQuestion(String questionText) {
         this.currentQuestion.setValue(new Question(questionText, ""));
+    }
+
+    public void setLogs(List<String> logsList) {
+        this.logs.setValue(logsList);
     }
 
     public void setSpotlightPlayerId(String spotlightId) {
@@ -165,6 +175,7 @@ public class GameViewModel extends AndroidViewModel {
             setPhase(Phase.REVIEW);
         } else {
             currentPlayerIndex = nextPlayer;
+            currentPlayerIndexLiveData.setValue(currentPlayerIndex);
             setPhase(Phase.WAITING_FOR_ANSWERS);
         }
     }
@@ -197,6 +208,7 @@ public class GameViewModel extends AndroidViewModel {
 
     public void startVotingLocal() {
         currentPlayerIndex = (spotlightIndex + 1) % players.getValue().size();
+        currentPlayerIndexLiveData.setValue(currentPlayerIndex);
         setPhase(Phase.VOTING);
     }
 
@@ -209,6 +221,7 @@ public class GameViewModel extends AndroidViewModel {
             calculateLocalScores();
         } else {
             currentPlayerIndex = nextGuesser;
+            currentPlayerIndexLiveData.setValue(currentPlayerIndex);
             setPhase(Phase.VOTING);
         }
     }
@@ -318,8 +331,8 @@ public class GameViewModel extends AndroidViewModel {
             updates.put("status", "WAITING_FOR_ANSWERS");
             updates.put("spotlightPlayerId", nextSpotlightId);
             updates.put("currentQuestion", nextQuestion.getText());
-            updates.put("guesses", null);
-            updates.put("votes", null);
+            updates.put("guesses", new HashMap<>());
+            updates.put("votes", new HashMap<>());
             updates.put("players", playerMap);
 
             gameRepository.updateRoom(updates);
@@ -333,43 +346,50 @@ public class GameViewModel extends AndroidViewModel {
                 if (room == null) return;
 
                 String spotlightId = room.getSpotlightPlayerId();
-                if (playerId == null || !playerId.equals(spotlightId)) return;
+                // Allow Host (for voting completion) or Spotlight (for review completion) to calculate
+                if (!isHost() && (playerId == null || !playerId.equals(spotlightId))) return;
 
                 Map<String, Player> playerMap = room.getPlayers();
                 Map<String, String> guesses = room.getGuesses();
                 Map<String, String> votes = room.getVotes();
-                String spotlightAnswer = guesses.get(spotlightId);
-                List<String> logsList = new ArrayList<>();
+                String spotlightAnswer = guesses != null ? guesses.get(spotlightId) : null;
+                List<String> logsList = new ArrayList<>(room.getLogs());
 
-                // 1. Handle matches from Spotlight
-                if (matchedAnswers != null && !matchedAnswers.isEmpty()) {
+                // 1. Handle matches from Spotlight (Review Phase)
+                if (matchedAnswers != null && !matchedAnswers.isEmpty() && guesses != null) {
                     for (String matchedAnswer : matchedAnswers) {
                         for (Map.Entry<String, String> entry : guesses.entrySet()) {
                             String pId = entry.getKey();
-                            if (!pId.equals(spotlightId) && matchedAnswer.equals(entry.getValue())) {
+                            if (!pId.equals(spotlightId) && matchedAnswer.equalsIgnoreCase(entry.getValue())) {
                                 if (playerMap.containsKey(pId)) {
                                     playerMap.get(pId).addScore(4);
-                                    logsList.add(playerMap.get(pId).getName() + " matched the Spotlight's answer in Review! (+4)");
+                                    logsList.add(playerMap.get(pId).getName() + " matched the Spotlight's answer! (+4)");
                                 }
                             }
                         }
                     }
                 }
 
-                // 2. Handle votes
-                if (votes != null) {
+                // 2. Handle votes (Voting Phase)
+                if (votes != null && spotlightAnswer != null && guesses != null) {
                     for (Map.Entry<String, String> entry : votes.entrySet()) {
                         String voterId = entry.getKey();
                         String votedAnswer = entry.getValue();
 
                         if (votedAnswer.equals(spotlightAnswer)) {
-                            playerMap.get(voterId).addScore(4);
-                            logsList.add(playerMap.get(voterId).getName() + " correctly guessed " + playerMap.get(spotlightId).getName() + "'s answer (+4)");
+                            // Correct guess: +2 to guesser, +1 to Spotlight
+                            if (playerMap.containsKey(voterId)) playerMap.get(voterId).addScore(2);
+                            if (playerMap.containsKey(spotlightId)) playerMap.get(spotlightId).addScore(1);
+                            logsList.add(playerMap.get(voterId).getName() + " correctly guessed the Spotlight's answer! (+2 for guesser, +1 for Spotlight)");
                         } else {
+                            // Guessed someone else: +1 to the person guessed
                             for (Map.Entry<String, String> guessEntry : guesses.entrySet()) {
                                 String targetId = guessEntry.getKey();
                                 if (!targetId.equals(spotlightId) && !targetId.equals(voterId) && votedAnswer.equals(guessEntry.getValue())) {
-                                    logsList.add(playerMap.get(voterId).getName() + " guessed " + playerMap.get(targetId).getName() + "'s answer");
+                                    if (playerMap.containsKey(targetId)) {
+                                        playerMap.get(targetId).addScore(1);
+                                        logsList.add(playerMap.get(targetId).getName() + " was guessed by " + playerMap.get(voterId).getName() + "! (+1)");
+                                    }
                                 }
                             }
                         }
@@ -393,6 +413,11 @@ public class GameViewModel extends AndroidViewModel {
                 gameRepository.updateRoom(updates);
             }
         });
+    }
+
+    public void leaveMultiplayerRoom() {
+        if (!isMultiplayer || roomCode == null || playerId == null) return;
+        gameRepository.removePlayer(playerId);
     }
 
     @Override

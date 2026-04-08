@@ -7,6 +7,7 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 
@@ -28,16 +29,19 @@ public class MainActivity extends AppCompatActivity {
 
         CardView buttonPassAndPlay = findViewById(R.id.buttonPassAndPlay);
         CardView buttonMultiplayer = findViewById(R.id.buttonMultiplayer);
+        CardView buttonHowToPlay = findViewById(R.id.buttonHowToPlay);
         TextView textViewTitle = findViewById(R.id.textViewTitle);
 
         // Simple entrance animation for buttons
         buttonPassAndPlay.setAlpha(0f);
         buttonMultiplayer.setAlpha(0f);
+        buttonHowToPlay.setAlpha(0f);
         textViewTitle.setAlpha(0f);
 
         textViewTitle.animate().alpha(1f).setDuration(1000).start();
         buttonPassAndPlay.animate().alpha(1f).setDuration(1000).setStartDelay(300).start();
         buttonMultiplayer.animate().alpha(1f).setDuration(1000).setStartDelay(600).start();
+        buttonHowToPlay.animate().alpha(1f).setDuration(1000).setStartDelay(900).start();
 
         buttonPassAndPlay.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, GameSetupActivity.class);
@@ -49,12 +53,25 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        buttonHowToPlay.setOnClickListener(v -> {
+            showHowToPlayDialog();
+        });
+
         buttonPassAndPlay.post(this::startWalkthrough);
+    }
+
+    private void showHowToPlayDialog() {
+        new AlertDialog.Builder(this, R.style.Theme_Spotlight_Dialog)
+                .setTitle(R.string.how_to_play_title)
+                .setMessage(R.string.how_to_play_content)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     private void startWalkthrough() {
         CardView buttonPassAndPlay = findViewById(R.id.buttonPassAndPlay);
         CardView buttonMultiplayer = findViewById(R.id.buttonMultiplayer);
+        CardView buttonHowToPlay = findViewById(R.id.buttonHowToPlay);
 
         View walkthroughView = getLayoutInflater().inflate(R.layout.layout_walkthrough, new FrameLayout(this), false);
         TextView title = walkthroughView.findViewById(R.id.walkthroughTitle);
@@ -97,6 +114,24 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .build();
         targets.add(multiplayerTarget);
+
+        // Target 3: How to Play
+        Target howToPlayTarget = new Target.Builder()
+                .setAnchor(buttonHowToPlay)
+                .setShape(new Circle(180f))
+                .setOverlay(walkthroughView)
+                .setOnTargetListener(new com.takusemba.spotlight.OnTargetListener() {
+                    @Override
+                    public void onStarted() {
+                        title.setText(R.string.how_to_play_title);
+                        desc.setText(R.string.walkthrough_desc_how_to_play);
+                    }
+
+                    @Override
+                    public void onEnded() {}
+                })
+                .build();
+        targets.add(howToPlayTarget);
 
         Spotlight spotlight = new Spotlight.Builder(this)
                 .setTargets(targets)

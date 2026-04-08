@@ -57,7 +57,8 @@ public class GameRepository {
     }
 
     public void getRoomDataOnce(String roomCode, OnRoomDataListener listener) {
-        roomsRef.child(roomCode).addListenerForSingleValueEvent(new ValueEventListener() {
+        currentRoomRef = roomsRef.child(roomCode);
+        currentRoomRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 listener.onDataChange(snapshot.getValue(GameRoom.class));

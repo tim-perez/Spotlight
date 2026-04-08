@@ -51,6 +51,7 @@ public class GameActivity extends AppCompatActivity {
     private String hostId;
     
     private Set<String> multiplayerMatchedAnswers = new HashSet<>();
+    private String selectedVote = null;
     private Phase lastProcessedPhase = null;
 
     private MediaPlayer mediaPlayerCorrect, mediaPlayerReveal;
@@ -109,6 +110,24 @@ public class GameActivity extends AppCompatActivity {
             }
         });
 
+        viewModel.getSpotlightPlayerIndex().observe(this, index -> {
+            if (!isMultiplayer && index != null && players != null) {
+                updateSpotlightUI();
+            }
+        });
+
+        viewModel.getCurrentPlayerIndexLiveData().observe(this, index -> {
+            if (!isMultiplayer && index != null && players != null) {
+                updateUI(viewModel.getCurrentPhase().getValue());
+            }
+        });
+
+        viewModel.getPlayers().observe(this, playerList -> {
+            if (playerList != null) {
+                this.players = playerList;
+            }
+        });
+
         if (isMultiplayer) {
             viewModel.getRoomData().observe(this, room -> {
                 if (room != null) {
@@ -145,7 +164,15 @@ public class GameActivity extends AppCompatActivity {
         });
     }
 
+    private void updateSpotlightUI() {
+        Player spotlight = players.get(viewModel.getSpotlightPlayerIndex().getValue());
+        binding.textViewTargetPlayer.setText(getString(R.string.spotlight_announcement, spotlight.getName()));
+        updateSpotlightAvatar(spotlight);
+    }
+
     private void updateUI(Phase phase) {
+        if (phase == null) return;
+        
         binding.layoutAnswerInput.setVisibility(View.GONE);
         binding.layoutSelection.setVisibility(View.GONE);
         binding.layoutPassDevice.setVisibility(View.GONE);
@@ -155,22 +182,23 @@ public class GameActivity extends AppCompatActivity {
 
         if (isMultiplayer) return; // Handled by handleRoomUpdate
 
-        Player spotlight = players.get(viewModel.getSpotlightPlayerIndex().getValue());
-        binding.textViewTargetPlayer.setText(getString(R.string.spotlight_announcement, spotlight.getName()));
-        updateSpotlightAvatar(spotlight);
+        updateSpotlightUI();
+
+        Integer currentPlayerIdx = viewModel.getCurrentPlayerIndexLiveData().getValue();
+        if (currentPlayerIdx == null) currentPlayerIdx = 0;
 
         switch (phase) {
             case WAITING_FOR_ANSWERS:
                 binding.textViewPhaseTitle.setText(R.string.phase_answers);
-                showPassDevice(players.get(viewModel.getCurrentPlayerIndex()).getName());
+                showPassDevice(players.get(currentPlayerIdx).getName());
                 break;
             case REVIEW:
                 binding.textViewPhaseTitle.setText(R.string.phase_review);
-                showPassDevice(spotlight.getName());
+                showPassDevice(players.get(viewModel.getSpotlightPlayerIndex().getValue()).getName());
                 break;
             case VOTING:
                 binding.textViewPhaseTitle.setText(R.string.phase_voting);
-                showPassDevice(players.get(viewModel.getCurrentPlayerIndex()).getName());
+                showPassDevice(players.get(currentPlayerIdx).getName());
                 break;
             case RESULTS:
                 binding.textViewPhaseTitle.setText(R.string.phase_results);
@@ -186,6 +214,7 @@ public class GameActivity extends AppCompatActivity {
                 binding.buttonAction.setVisibility(View.VISIBLE);
                 binding.buttonAction.setText(R.string.button_exit_game);
                 showLocalResults();
+                showWinner(players);
                 showConfettiAnimation();
                 break;
         }
@@ -199,6 +228,10 @@ public class GameActivity extends AppCompatActivity {
 
         if (room.getPlayers() != null) {
             viewModel.setPlayers(new ArrayList<>(room.getPlayers().values()));
+        }
+
+        if (room.getLogs() != null) {
+            viewModel.setLogs(room.getLogs());
         }
         
         Phase phase = Phase.WAITING_FOR_ANSWERS;
@@ -312,6 +345,7 @@ public class GameActivity extends AppCompatActivity {
                 binding.buttonAction.setVisibility(View.VISIBLE);
                 binding.buttonAction.setText(R.string.button_exit_game);
                 binding.buttonAction.setEnabled(true);
+                showWinner(new ArrayList<>(room.getPlayers().values()));
                 showConfettiAnimation();
                 break;
         }
@@ -364,6 +398,13 @@ public class GameActivity extends AppCompatActivity {
         Phase currentPhase = viewModel.getCurrentPhase().getValue();
         if (currentPhase == Phase.REVIEW) {
             startVotingPhase();
+        } else if (currentPhase == Phase.VOTING) {
+            if (selectedVote != null) {
+                roomRef.child("votes").child(playerId).setValue(selectedVote);
+                binding.layoutSelection.setVisibility(View.GONE);
+                binding.buttonAction.setVisibility(View.GONE);
+                selectedVote = null;
+            }
         } else if (currentPhase == Phase.RESULTS && viewModel.isHost()) {
             startNextMultiplayerRound();
         } else if (currentPhase == Phase.FINISHED) {
@@ -382,6 +423,11 @@ public class GameActivity extends AppCompatActivity {
                 viewModel.calculateLocalScores();
             } else {
                 viewModel.startVotingLocal();
+            }
+        } else if (currentPhase == Phase.VOTING) {
+            if (selectedVote != null) {
+                viewModel.submitLocalVote(selectedVote);
+                selectedVote = null;
             }
         }
     }
@@ -403,6 +449,10 @@ public class GameActivity extends AppCompatActivity {
             finish();
             return;
         }
+        
+        // Clear local match state before next round
+        multiplayerMatchedAnswers.clear();
+
         viewModel.startNextMultiplayerRound();
     }
 
@@ -456,7 +506,12 @@ public class GameActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle(R.string.dialog_leave_game_title)
                 .setMessage(R.string.dialog_leave_game_message)
-                .setPositiveButton(R.string.leave, (dialog, which) -> finish())
+                .setPositiveButton(R.string.leave, (dialog, which) -> {
+                    if (isMultiplayer) {
+                        viewModel.leaveMultiplayerRoom();
+                    }
+                    finish();
+                })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
     }
@@ -534,6 +589,9 @@ public class GameActivity extends AppCompatActivity {
     private void prepareLocalVotingUI() {
         binding.layoutSelection.setVisibility(View.VISIBLE);
         binding.textViewSelectionPrompt.setText(getString(R.string.voting_prompt_format, players.get(viewModel.getCurrentPlayerIndex()).getName()));
+        binding.buttonAction.setVisibility(View.VISIBLE);
+        binding.buttonAction.setText(R.string.button_confirm_vote);
+        binding.buttonAction.setEnabled(false);
         
         List<String> choices = new ArrayList<>(viewModel.getCurrentChoices().getValue());
         String playerAnswer = viewModel.getLocalAnswers().get(viewModel.getCurrentPlayerIndex());
@@ -544,7 +602,8 @@ public class GameActivity extends AppCompatActivity {
         AnswerChoiceAdapter adapter = new AnswerChoiceAdapter(choices, new AnswerChoiceAdapter.OnChoiceActionListener() {
             @Override
             public void onChoiceSelected(String choice) {
-                viewModel.submitLocalVote(choice);
+                selectedVote = choice;
+                binding.buttonAction.setEnabled(true);
             }
         });
         binding.recyclerViewChoices.setLayoutManager(new LinearLayoutManager(this));
@@ -559,16 +618,30 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void prepareMultiplayerVotingUI(GameRoom room) {
-        List<String> choices = new ArrayList<>(room.getGuesses().values());
+        binding.layoutSelection.setVisibility(View.VISIBLE);
+        binding.buttonAction.setVisibility(View.VISIBLE);
+        binding.buttonAction.setText(R.string.button_confirm_vote);
+        binding.buttonAction.setEnabled(false);
+
+        Map<String, String> guesses = room.getGuesses();
+        List<String> choices = new ArrayList<>();
+        if (guesses != null) {
+            for (Map.Entry<String, String> entry : guesses.entrySet()) {
+                if (!entry.getKey().equals(playerId)) {
+                    choices.add(entry.getValue());
+                }
+            }
+        }
         Collections.shuffle(choices);
 
         AnswerChoiceAdapter adapter = new AnswerChoiceAdapter(choices, new AnswerChoiceAdapter.OnChoiceActionListener() {
             @Override
             public void onChoiceSelected(String choice) {
-                roomRef.child("votes").child(playerId).setValue(choice);
-                binding.layoutSelection.setVisibility(View.GONE);
+                selectedVote = choice;
+                binding.buttonAction.setEnabled(true);
             }
         });
+
         binding.recyclerViewChoices.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerViewChoices.setAdapter(adapter);
     }
@@ -587,5 +660,24 @@ public class GameActivity extends AppCompatActivity {
     private void showConfettiAnimation() {
         binding.animationViewConfetti.setVisibility(View.VISIBLE);
         binding.animationViewConfetti.playAnimation();
+    }
+
+    private void showWinner(List<Player> playerList) {
+        if (playerList == null || playerList.isEmpty()) return;
+        
+        Player winner = playerList.get(0);
+        for (Player p : playerList) {
+            if (p.getScore() > winner.getScore()) {
+                winner = p;
+            }
+        }
+        
+        binding.textViewWinner.setText(getString(R.string.winner_announcement, winner.getName()));
+        binding.textViewWinner.setVisibility(View.VISIBLE);
+        
+        // Hide other distracting elements
+        binding.cardViewQuestion.setVisibility(View.GONE);
+        binding.textViewTargetPlayer.setVisibility(View.GONE);
+        binding.viewSpotlightAvatar.setVisibility(View.GONE);
     }
 }

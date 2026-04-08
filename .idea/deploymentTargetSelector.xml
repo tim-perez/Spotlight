@@ -11,7 +11,7 @@
         <DialogSelection />
       </SelectionState>
       <SelectionState runConfigName="app">
-        <option name="selectionMode" value="DROPDOWN" />
+        <option name="selectionMode" value="DIALOG" />
         <DropdownSelection timestamp="2026-04-07T05:02:45.206094Z">
           <Target type="DEFAULT_BOOT">
             <handle>
@@ -23,12 +23,12 @@
           <targets>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/timperez/.android/avd/Optimal_Test_Device_2.avd" />
+                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/timperez/.android/avd/Optimal_Test_Device.avd" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/timperez/.android/avd/Optimal_Test_Device.avd" />
+                <DeviceId pluginId="LocalEmulator" identifier="path=/Users/timperez/.android/avd/Optimal_Test_Device_2.avd" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">

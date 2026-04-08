@@ -6,6 +6,7 @@
     <string name="subtitle_party_game">THE PARTY GAME</string>
     <string name="button_pass_and_play">PASS AND PLAY</string>
     <string name="button_online_multiplayer">ONLINE MULTIPLAYER</string>
+    <string name="button_how_to_play">HOW TO PLAY</string>
 
     <!-- Game Setup -->
     <string name="title_add_players">ADD PLAYERS</string>
@@ -72,6 +73,7 @@
     <string name="phase_review">Review Phase</string>
     <string name="your_answer_format">Your Answer: %1$s</string>
     <string name="button_start_voting">Start Voting</string>
+    <string name="button_confirm_vote">Confirm Vote</string>
     <string name="button_reveal_results">It\'s a match! Reveal Results</string>
     <string name="spotlight_reviewing">Spotlight is reviewing answers…</string>
     <string name="phase_voting">Voting Phase</string>
@@ -96,6 +98,11 @@
     <string name="dialog_leave_game_message">Are you sure you want to leave?</string>
     <string name="leave">Leave</string>
     <string name="cancel">Cancel</string>
+
+    <!-- How to Play -->
+    <string name="how_to_play_title">How to Play</string>
+    <string name="how_to_play_content">1. One player is randomly chosen to be in the Spotlight each round.\n\n2. A question is shown. Everyone, including the Spotlight, submits an answer. The Spotlight gives their true answer, while others try to guess what the Spotlight will say or just provide a clever distraction.\n\n3. The Spotlight reviews the answers and identifies any that exactly match their own (this ends the round early).\n\n4. If no matches, everyone else votes on which answer they think belongs to the Spotlight.\n\n5. Scoring: \n   • +2 for guessing correctly.\n   • +1 to the Spotlight for each correct guess.\n   • +1 to a non-spotlight player if someone else votes for their answer.\n   • +4 if the Spotlight identifies a matching answer in review.\n\n6. First to 25 points wins!</string>
+    <string name="walkthrough_desc_how_to_play">Learn the rules and scoring of Spotlight.</string>
 
     <!-- Walkthrough -->
     <string name="walkthrough_title_pass_and_play">Pass and Play</string>
