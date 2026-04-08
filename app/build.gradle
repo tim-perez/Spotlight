@@ -43,7 +43,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'com.airbnb.android:lottie:6.7.1'
-    implementation 'com.github.TakuSemba:Spotlight:2.0.5'
+    implementation 'com.github.takusemba:spotlight:2.0.5'
 
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.6.1'
     implementation 'androidx.lifecycle:lifecycle-livedata:2.6.1'
