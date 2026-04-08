@@ -63,6 +63,7 @@ public class GameActivity extends AppCompatActivity {
 
     private TextView textViewPhaseTitle, textViewTargetPlayer, textViewQuestion, textViewPassTo, textViewSelectionPrompt, textViewReviewInstructions;
     private LinearLayout layoutAnswerInput, layoutSelection, layoutPassDevice, layoutResults;
+    private View viewPassToAvatar;
     private EditText editTextAnswer;
     private Button buttonSubmitAnswer, buttonReady, buttonAction, buttonScoreSheet, buttonLogs;
     private RecyclerView recyclerViewChoices, recyclerViewResults;
@@ -221,6 +222,20 @@ public class GameActivity extends AppCompatActivity {
 
         if (spotlightPlayer != null && currentPhase != null) {
             updateMultiplayerUI(room, spotlightPlayer);
+            updateSpotlightAvatar(spotlightPlayer);
+        }
+    }
+
+    private void updateSpotlightAvatar(Player spotlightPlayer) {
+        View viewSpotlightAvatar = findViewById(R.id.viewSpotlightAvatar);
+        if (viewSpotlightAvatar != null && spotlightPlayer.getAvatarColor() != 0) {
+            android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+            drawable.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+            drawable.setColor(spotlightPlayer.getAvatarColor());
+            viewSpotlightAvatar.setBackground(drawable);
+            viewSpotlightAvatar.setVisibility(View.VISIBLE);
+        } else if (viewSpotlightAvatar != null) {
+            viewSpotlightAvatar.setVisibility(View.GONE);
         }
     }
 
@@ -576,6 +591,9 @@ public class GameActivity extends AppCompatActivity {
         layoutSelection = findViewById(R.id.layoutSelection);
         layoutPassDevice = findViewById(R.id.layoutPassDevice);
         layoutResults = findViewById(R.id.layoutResults);
+        viewPassToAvatar = findViewById(R.id.viewPassToAvatar);
+        
+        View viewSpotlightAvatar = findViewById(R.id.viewSpotlightAvatar);
 
         editTextAnswer = findViewById(R.id.editTextAnswer);
         buttonSubmitAnswer = findViewById(R.id.buttonSubmitAnswer);
@@ -805,6 +823,8 @@ public class GameActivity extends AppCompatActivity {
         textViewTargetPlayer.setTextColor(getResources().getColor(R.color.accent_yellow));
         textViewTargetPlayer.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
         textViewQuestion.setText(currentQuestion.getText());
+        
+        updateSpotlightAvatar(spotlight);
 
         switch (phase) {
             case WAITING_FOR_ANSWERS:
@@ -941,6 +961,25 @@ public class GameActivity extends AppCompatActivity {
     private void showPassDevice(String name) {
         layoutPassDevice.setVisibility(View.VISIBLE);
         textViewPassTo.setText(getString(R.string.pass_device_to, name));
+        
+        // Find the player to get their color
+        Player targetPlayer = null;
+        for (Player p : players) {
+            if (p.getName().equals(name)) {
+                targetPlayer = p;
+                break;
+            }
+        }
+        
+        if (targetPlayer != null && targetPlayer.getAvatarColor() != 0) {
+            android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+            drawable.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+            drawable.setColor(targetPlayer.getAvatarColor());
+            viewPassToAvatar.setBackground(drawable);
+            viewPassToAvatar.setVisibility(View.VISIBLE);
+        } else {
+            viewPassToAvatar.setVisibility(View.GONE);
+        }
     }
 
     private void handleReady() {

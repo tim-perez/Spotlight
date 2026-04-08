@@ -1,11 +1,13 @@
 package com.spotlight;
 
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.spotlight.model.Player;
@@ -38,9 +40,18 @@ public class PlayerAdapter extends RecyclerView.Adapter<PlayerAdapter.PlayerView
         Player player = playerList.get(position);
         String displayName = player.getName();
         if (hostId != null && hostId.equals(player.getId())) {
-            displayName += holder.itemView.getContext().getString(R.string.host_suffix);
+            displayName += " " + holder.itemView.getContext().getString(R.string.host_suffix);
         }
         holder.textViewName.setText(displayName);
+
+        if (player.getAvatarColor() != 0) {
+            GradientDrawable drawable = new GradientDrawable();
+            drawable.setShape(GradientDrawable.OVAL);
+            drawable.setColor(player.getAvatarColor());
+            holder.viewAvatar.setBackground(drawable);
+        } else {
+            holder.viewAvatar.setBackgroundResource(android.R.color.darker_gray);
+        }
     }
 
     @Override
@@ -50,10 +61,12 @@ public class PlayerAdapter extends RecyclerView.Adapter<PlayerAdapter.PlayerView
 
     static class PlayerViewHolder extends RecyclerView.ViewHolder {
         TextView textViewName;
+        View viewAvatar;
 
         public PlayerViewHolder(@NonNull View itemView) {
             super(itemView);
-            textViewName = itemView.findViewById(android.R.id.text1);
+            textViewName = itemView.findViewById(R.id.textViewPlayerName);
+            viewAvatar = itemView.findViewById(R.id.viewAvatarColor);
         }
     }
 }

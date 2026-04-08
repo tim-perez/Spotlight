@@ -8,6 +8,13 @@
     android:layout_marginBottom="4dp"
     android:gravity="center_vertical">
 
+    <View
+        android:id="@+id/viewResultAvatarColor"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginEnd="12dp"
+        android:background="@android:color/white" />
+
     <TextView
         android:id="@+id/textViewResultPlayerName"
         android:layout_width="0dp"

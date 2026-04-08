@@ -8,6 +8,7 @@ public class Player implements Serializable {
     private int score;
     private String currentAnswer;
     private long joinTimestamp;
+    private int avatarColor;
 
     public Player() {
         // Required for Firebase
@@ -18,6 +19,7 @@ public class Player implements Serializable {
         this.name = name;
         this.score = 0;
         this.joinTimestamp = System.currentTimeMillis();
+        this.avatarColor = 0;
     }
 
     public Player(String id, String name) {
@@ -25,6 +27,15 @@ public class Player implements Serializable {
         this.name = name;
         this.score = 0;
         this.joinTimestamp = System.currentTimeMillis();
+        this.avatarColor = 0;
+    }
+
+    public int getAvatarColor() {
+        return avatarColor;
+    }
+
+    public void setAvatarColor(int avatarColor) {
+        this.avatarColor = avatarColor;
     }
 
     public long getJoinTimestamp() {

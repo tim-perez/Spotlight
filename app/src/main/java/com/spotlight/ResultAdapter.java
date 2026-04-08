@@ -1,5 +1,6 @@
 package com.spotlight;
 
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,6 +33,15 @@ public class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.ResultView
         Player player = players.get(position);
         holder.textViewName.setText(player.getName());
         holder.textViewScore.setText(String.valueOf(player.getScore()));
+
+        if (player.getAvatarColor() != 0) {
+            GradientDrawable drawable = new GradientDrawable();
+            drawable.setShape(GradientDrawable.OVAL);
+            drawable.setColor(player.getAvatarColor());
+            holder.viewAvatar.setBackground(drawable);
+        } else {
+            holder.viewAvatar.setBackgroundResource(android.R.color.darker_gray);
+        }
     }
 
     @Override
@@ -42,11 +52,13 @@ public class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.ResultView
     static class ResultViewHolder extends RecyclerView.ViewHolder {
         TextView textViewName;
         TextView textViewScore;
+        View viewAvatar;
 
         public ResultViewHolder(@NonNull View itemView) {
             super(itemView);
             textViewName = itemView.findViewById(R.id.textViewResultPlayerName);
             textViewScore = itemView.findViewById(R.id.textViewResultScore);
+            viewAvatar = itemView.findViewById(R.id.viewResultAvatarColor);
         }
     }
 }
