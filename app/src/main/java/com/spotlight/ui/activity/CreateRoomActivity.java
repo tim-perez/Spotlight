@@ -4,24 +4,15 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.spotlight.R;
+import com.spotlight.databinding.ActivityCreateRoomBinding;
+import com.spotlight.logic.CreateRoomViewModel;
 import com.spotlight.logic.QuestionRepository;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
@@ -30,151 +21,108 @@ import com.spotlight.util.AvatarUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-import java.util.UUID;
 
 public class CreateRoomActivity extends AppCompatActivity {
 
-    private List<Player> players = new ArrayList<>();
+    private ActivityCreateRoomBinding binding;
+    private CreateRoomViewModel viewModel;
     private PlayerAdapter adapter;
-    private String roomCode;
-    private String playerId;
-    private DatabaseReference roomRef;
-    private ValueEventListener roomListener;
-    private Spinner spinnerCategory;
-    private QuestionRepository questionRepository;
     private int selectedColor;
     private View[] colorViews;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_create_room);
+        binding = ActivityCreateRoomBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        EditText editTextHostName = findViewById(R.id.editTextHostName);
-        Button buttonGenerateRoom = findViewById(R.id.buttonGenerateRoom);
-        LinearLayout layoutRoomInfo = findViewById(R.id.layoutRoomInfo);
-        TextView textViewRoomCodeDisplay = findViewById(R.id.textViewRoomCodeDisplay);
-        RecyclerView recyclerViewRoomPlayers = findViewById(R.id.recyclerViewRoomPlayers);
-        Button buttonStartMultiplayer = findViewById(R.id.buttonStartMultiplayer);
-        spinnerCategory = findViewById(R.id.spinnerCategory);
-        View buttonBack = findViewById(R.id.buttonBack);
+        viewModel = new ViewModelProvider(this).get(CreateRoomViewModel.class);
 
+        initViews();
+        setupObservers();
+    }
+
+    private void initViews() {
         colorViews = new View[]{
-                findViewById(R.id.colorBlue),
-                findViewById(R.id.colorGreen),
-                findViewById(R.id.colorOrange),
-                findViewById(R.id.colorPurple),
-                findViewById(R.id.colorRed),
-                findViewById(R.id.colorTeal),
-                findViewById(R.id.colorPink)
+                binding.colorBlue,
+                binding.colorGreen,
+                binding.colorOrange,
+                binding.colorPurple,
+                binding.colorRed,
+                binding.colorTeal,
+                binding.colorPink
         };
         AvatarUtils.setupColorSelection(this, colorViews, color -> selectedColor = color);
         AvatarUtils.resetColorSelection(colorViews);
 
-        questionRepository = new QuestionRepository(this);
+        QuestionRepository questionRepository = new QuestionRepository(this);
         ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, questionRepository.getCategories());
         categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerCategory.setAdapter(categoryAdapter);
+        binding.spinnerCategory.setAdapter(categoryAdapter);
 
-        buttonBack.setOnClickListener(v -> finish());
+        binding.buttonBack.setOnClickListener(v -> finish());
 
-        adapter = new PlayerAdapter(players);
-        recyclerViewRoomPlayers.setLayoutManager(new LinearLayoutManager(this));
-        recyclerViewRoomPlayers.setAdapter(adapter);
+        adapter = new PlayerAdapter(new ArrayList<>());
+        binding.recyclerViewRoomPlayers.setLayoutManager(new LinearLayoutManager(this));
+        binding.recyclerViewRoomPlayers.setAdapter(adapter);
 
-        buttonGenerateRoom.setOnClickListener(v -> {
-            String name = editTextHostName.getText().toString().trim();
+        binding.buttonGenerateRoom.setOnClickListener(v -> {
+            String name = binding.editTextHostName.getText().toString().trim();
             if (name.isEmpty()) {
                 Toast.makeText(this, R.string.hint_enter_your_name, Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            playerId = UUID.randomUUID().toString();
-            roomCode = generateRoomCode();
-            
-            createRoomInFirebase(name);
-
-            textViewRoomCodeDisplay.setText(getString(R.string.room_code_format, roomCode));
-            layoutRoomInfo.setVisibility(View.VISIBLE);
-            buttonStartMultiplayer.setVisibility(View.VISIBLE);
-            buttonGenerateRoom.setVisibility(View.GONE);
-            findViewById(R.id.layoutColorsHost).setVisibility(View.GONE);
-            editTextHostName.setEnabled(false);
+            viewModel.createRoom(name, selectedColor);
         });
 
-        buttonStartMultiplayer.setOnClickListener(v -> {
-            if (players.size() < 3) {
+        binding.buttonStartMultiplayer.setOnClickListener(v -> {
+            GameRoom room = viewModel.getRoomData().getValue();
+            if (room != null && room.getPlayers().size() < 3) {
                 Toast.makeText(this, R.string.error_wait_players, Toast.LENGTH_SHORT).show();
                 return;
             }
-            
-            String selectedCategory = spinnerCategory.getSelectedItem().toString();
-            
-            // Update room status and category
-            java.util.Map<String, Object> updates = new java.util.HashMap<>();
-            updates.put("status", "IN_PROGRESS");
-            updates.put("category", selectedCategory);
-            roomRef.updateChildren(updates);
-            
-            Intent intent = new Intent(this, GameActivity.class);
-            intent.putExtra("players", (ArrayList<Player>) players);
-            intent.putExtra("isMultiplayer", true);
-            intent.putExtra("roomCode", roomCode);
-            intent.putExtra("playerId", playerId);
-            intent.putExtra("hostId", playerId);
-            intent.putExtra("category", selectedCategory);
-            startActivity(intent);
+            String selectedCategory = binding.spinnerCategory.getSelectedItem().toString();
+            viewModel.startGame(selectedCategory);
         });
     }
 
-    private void createRoomInFirebase(String hostName) {
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        roomRef = database.getReference("rooms").child(roomCode);
+    private void setupObservers() {
+        viewModel.getIsRoomCreated().observe(this, isCreated -> {
+            if (isCreated) {
+                binding.textViewRoomCodeDisplay.setText(getString(R.string.room_code_format, viewModel.getRoomCode()));
+                binding.layoutRoomInfo.setVisibility(View.VISIBLE);
+                binding.buttonStartMultiplayer.setVisibility(View.VISIBLE);
+                binding.buttonGenerateRoom.setVisibility(View.GONE);
+                binding.layoutColorsHost.setVisibility(View.GONE);
+                binding.editTextHostName.setEnabled(false);
+            }
+        });
 
-        Player host = new Player(playerId, hostName);
-        host.setAvatarColor(selectedColor);
-        GameRoom room = new GameRoom(roomCode, playerId);
-        room.getPlayers().put(playerId, host);
+        viewModel.getErrorMessage().observe(this, message -> {
+            if (message != null) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
 
-        roomRef.setValue(room);
-        adapter.setHostId(playerId);
+        viewModel.getRoomData().observe(this, room -> {
+            if (room != null && room.getPlayers() != null) {
+                List<Player> playersList = new ArrayList<>(room.getPlayers().values());
+                adapter.setPlayers(playersList);
+                adapter.setHostId(room.getHostId());
+                adapter.notifyDataSetChanged();
 
-        // Listen for players joining
-        roomListener = roomRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                GameRoom updatedRoom = snapshot.getValue(GameRoom.class);
-                if (updatedRoom != null && updatedRoom.getPlayers() != null) {
-                    players.clear();
-                    players.addAll(updatedRoom.getPlayers().values());
-                    adapter.notifyDataSetChanged();
+                if ("IN_PROGRESS".equals(room.getStatus())) {
+                    Intent intent = new Intent(this, GameActivity.class);
+                    intent.putExtra("players", new ArrayList<>(playersList));
+                    intent.putExtra("isMultiplayer", true);
+                    intent.putExtra("roomCode", viewModel.getRoomCode());
+                    intent.putExtra("playerId", viewModel.getPlayerId());
+                    intent.putExtra("hostId", room.getHostId());
+                    intent.putExtra("category", room.getCategory());
+                    startActivity(intent);
+                    finish();
                 }
             }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(CreateRoomActivity.this, R.string.error_database, Toast.LENGTH_SHORT).show();
-            }
         });
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (roomRef != null && roomListener != null) {
-            roomRef.removeEventListener(roomListener);
-        }
-    }
-
-    private String generateRoomCode() {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        StringBuilder sb = new StringBuilder();
-        Random rnd = new Random();
-        while (sb.length() < 4) {
-            int index = (int) (rnd.nextFloat() * chars.length());
-            sb.append(chars.charAt(index));
-        }
-        return sb.toString();
     }
 }
