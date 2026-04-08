@@ -67,7 +67,7 @@ public class JoinRoomActivity extends AppCompatActivity {
             }
 
             if (name.isEmpty() || roomCode.isEmpty()) {
-                Toast.makeText(this, "Enter name and room code", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.error_enter_name_code, Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -78,21 +78,21 @@ public class JoinRoomActivity extends AppCompatActivity {
 
     private void joinRoom(String name) {
         textViewStatus.setVisibility(View.VISIBLE);
-        textViewStatus.setText("Searching for room: " + roomCode + "...");
+        textViewStatus.setText(getString(R.string.status_searching, roomCode));
         
         DatabaseReference roomsRef = FirebaseDatabase.getInstance().getReference("rooms");
         roomsRef.child(roomCode).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (!snapshot.exists()) {
-                    textViewStatus.setText("Room " + roomCode + " not found.");
+                    textViewStatus.setText(getString(R.string.error_room_not_found, roomCode));
                     return;
                 }
                 
                 GameRoom room = snapshot.getValue(GameRoom.class);
                 if (room != null) {
                     if ("WAITING".equals(room.getStatus())) {
-                        textViewStatus.setText("Waiting for Host...");
+                        textViewStatus.setText(R.string.status_waiting_host);
                         Player player = new Player(playerId, name);
                         roomsRef.child(roomCode).child("players").child(playerId).setValue(player);
                         
@@ -104,16 +104,16 @@ public class JoinRoomActivity extends AppCompatActivity {
                         
                         listenForPlayersAndStart();
                     } else {
-                        textViewStatus.setText("Game already in progress.");
+                        textViewStatus.setText(R.string.error_game_in_progress);
                     }
                 } else {
-                    textViewStatus.setText("Error reading room data.");
+                    textViewStatus.setText(R.string.error_reading_room);
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                textViewStatus.setText("Database error: " + error.getMessage());
+                textViewStatus.setText(getString(R.string.error_database_format, error.getMessage()));
             }
         });
     }

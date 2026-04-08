@@ -59,7 +59,7 @@ public class GameSetupActivity extends AppCompatActivity {
                     adapter.notifyItemInserted(players.size() - 1);
                     editTextPlayerName.setText("");
                 } else {
-                    Toast.makeText(GameSetupActivity.this, "Enter a name", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(GameSetupActivity.this, R.string.error_enter_name, Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -74,7 +74,7 @@ public class GameSetupActivity extends AppCompatActivity {
                     intent.putExtra("category", spinnerCategory.getSelectedItem().toString());
                     startActivity(intent);
                 } else {
-                    Toast.makeText(GameSetupActivity.this, "Need at least 3 players", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(GameSetupActivity.this, R.string.error_min_players, Toast.LENGTH_SHORT).show();
                 }
             }
         });

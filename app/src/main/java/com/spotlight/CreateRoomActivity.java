@@ -69,7 +69,7 @@ public class CreateRoomActivity extends AppCompatActivity {
         buttonGenerateRoom.setOnClickListener(v -> {
             String name = editTextHostName.getText().toString().trim();
             if (name.isEmpty()) {
-                Toast.makeText(this, "Enter your name", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.hint_enter_your_name, Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -78,7 +78,7 @@ public class CreateRoomActivity extends AppCompatActivity {
             
             createRoomInFirebase(name);
 
-            textViewRoomCodeDisplay.setText("Room Code: " + roomCode);
+            textViewRoomCodeDisplay.setText(getString(R.string.room_code_format, roomCode));
             layoutRoomInfo.setVisibility(View.VISIBLE);
             buttonStartMultiplayer.setVisibility(View.VISIBLE);
             buttonGenerateRoom.setVisibility(View.GONE);
@@ -87,7 +87,7 @@ public class CreateRoomActivity extends AppCompatActivity {
 
         buttonStartMultiplayer.setOnClickListener(v -> {
             if (players.size() < 3) {
-                Toast.makeText(this, "Wait for at least 3 players to start", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.error_wait_players, Toast.LENGTH_SHORT).show();
                 return;
             }
             
@@ -135,7 +135,7 @@ public class CreateRoomActivity extends AppCompatActivity {
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(CreateRoomActivity.this, "Database Error", Toast.LENGTH_SHORT).show();
+                Toast.makeText(CreateRoomActivity.this, R.string.error_database, Toast.LENGTH_SHORT).show();
             }
         });
     }

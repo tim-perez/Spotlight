@@ -38,7 +38,7 @@ public class PlayerAdapter extends RecyclerView.Adapter<PlayerAdapter.PlayerView
         Player player = playerList.get(position);
         String displayName = player.getName();
         if (hostId != null && hostId.equals(player.getId())) {
-            displayName += " (Host)";
+            displayName += holder.itemView.getContext().getString(R.string.host_suffix);
         }
         holder.textViewName.setText(displayName);
     }

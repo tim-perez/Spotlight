@@ -1,3 +1,119 @@
 <resources>
     <string name="app_name">Spotlight</string>
+
+    <!-- Main Menu -->
+    <string name="title_spotlight">SPOTLIGHT</string>
+    <string name="subtitle_party_game">THE PARTY GAME</string>
+    <string name="button_pass_and_play">PASS AND PLAY</string>
+    <string name="button_online_multiplayer">ONLINE MULTIPLAYER</string>
+
+    <!-- Game Setup -->
+    <string name="title_add_players">ADD PLAYERS</string>
+    <string name="hint_player_name">Player Name</string>
+    <string name="button_add">Add</string>
+    <string name="label_question_category">Question Category:</string>
+    <string name="button_start_game">Start Game</string>
+    <string name="error_enter_name">Enter a name</string>
+    <string name="error_min_players">Need at least 3 players</string>
+
+    <!-- Multiplayer Menu -->
+    <string name="title_multiplayer">MULTIPLAYER</string>
+    <string name="button_create_room">Create Room</string>
+    <string name="button_join_room">Join Room</string>
+
+    <!-- Create Room -->
+    <string name="title_create_room">CREATE ROOM</string>
+    <string name="hint_enter_your_name">Enter your name</string>
+    <string name="room_code_format">Room Code: %1$s</string>
+    <string name="label_players">Players:</string>
+    <string name="error_wait_players">Wait for at least 3 players to start</string>
+    <string name="error_database">Database Error</string>
+
+    <!-- Join Room -->
+    <string name="title_join_game">JOIN GAME</string>
+    <string name="hint_room_code">Room Code</string>
+    <string name="button_join">Join</string>
+    <string name="status_searching">Searching for room: %1$s…</string>
+    <string name="status_waiting_host">Waiting for Host…</string>
+    <string name="error_room_not_found">Room %1$s not found.</string>
+    <string name="error_game_in_progress">Game already in progress.</string>
+    <string name="error_reading_room">Error reading room data.</string>
+    <string name="error_database_format">Database error: %1$s</string>
+    <string name="error_enter_name_code">Enter name and room code</string>
+
+    <!-- Adapters -->
+    <string name="host_suffix"> (Host)</string>
+
+    <!-- Game UI -->
+    <string name="phase_title_placeholder">Phase Title</string>
+    <string name="button_scores">Scores</string>
+    <string name="button_logs">Logs</string>
+    <string name="current_player_placeholder">Current Player</string>
+    <string name="question_placeholder">Question goes here…</string>
+    <string name="hint_type_answer">Type your answer here…</string>
+    <string name="button_submit_answer">Submit Answer</string>
+    <string name="selection_prompt">Pick the Spotlight player\'s answer:</string>
+    <string name="review_instructions">Check mark = Matches your answer\nTrash can = Duplicate answer\n\nIf no duplicates or matches, click Start Voting.</string>
+    <string name="pass_device_to">Pass the device to %1$s</string>
+    <string name="button_ready">I am Ready</string>
+    <string name="round_results_title">Round Results</string>
+    <string name="button_continue">Continue</string>
+
+    <!-- Game Activity Phases & Messages -->
+    <string name="phase_spotlight">YOU ARE IN THE SPOTLIGHT!</string>
+    <string name="phase_guessing">GUESSING PHASE</string>
+    <string name="spotlight_announcement">%1$s is in the Spotlight!</string>
+    <string name="hint_secret_answer">Your secret answer</string>
+    <string name="hint_guess_answer">Guess their answer</string>
+    <string name="waiting_for_others">Waiting for others…</string>
+    <string name="phase_review">Review Phase</string>
+    <string name="your_answer_format">Your Answer: %1$s</string>
+    <string name="button_start_voting">Start Voting</string>
+    <string name="button_reveal_results">It\'s a match! Reveal Results</string>
+    <string name="spotlight_reviewing">Spotlight is reviewing answers…</string>
+    <string name="phase_voting">Voting Phase</string>
+    <string name="wait_for_votes">Wait for others to vote!</string>
+    <string name="waiting_for_other_votes">Waiting for other votes…</string>
+    <string name="phase_round_results">Round Results</string>
+    <string name="button_next_round">Next Round</string>
+    <string name="button_wait_for_host">Wait for Host</string>
+    <string name="phase_game_over">GAME OVER!</string>
+    <string name="secret_answer_was">Secret Answer was: %1$s</string>
+    <string name="round_ended_matches">Round ended (Matches/Duplicates found)</string>
+    <string name="winner_announcement">Winner: %1$s!</string>
+    <string name="button_back_to_menu">Back to Menu</string>
+    <string name="error_vote_own_answer">You cannot vote for your own answer!</string>
+    <string name="error_load_logs">Failed to load logs.</string>
+    <string name="error_no_logs">No logs for this round yet.</string>
+    <string name="dialog_scoreboard_title">Scoreboard</string>
+    <string name="scoreboard_desc">First to 25 points wins!\n\n</string>
+    <string name="ok">OK</string>
+    <string name="dialog_logs_title">Round Logs</string>
+    <string name="dialog_leave_game_title">Leave Game</string>
+    <string name="dialog_leave_game_message">Are you sure you want to leave?</string>
+    <string name="leave">Leave</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Local Game -->
+    <string name="phase_answers">Answers</string>
+    <string name="phase_results">Results</string>
+    <string name="phase_game_over_local">Game Over</string>
+    <string name="button_exit_game">Exit Game</string>
+    <string name="review_prompt">Review and mark matches or delete duplicates:</string>
+    <string name="voting_prompt_format">%1$s, pick the Spotlight\'s answer:</string>
+    <string name="error_choose_own_answer">You cannot choose your own answer</string>
+
+    <!-- Logs -->
+    <string name="log_matched_review">%1$s matched the Spotlight\'s answer in Review! +4</string>
+    <string name="log_correct_vote">%1$s correctly voted for the Spotlight! +2</string>
+    <string name="log_voted_other">%1$s voted for %2$s\'s answer. %3$s gets +1</string>
+    <string name="log_spotlight_bonus">%1$s received %2$d point(s) from correct guesses.</string>
+    <string name="log_no_points">No points were awarded this round.</string>
+
+    <!-- Other -->
+    <string name="back">Back</string>
+    <string name="match">Match</string>
+    <string name="delete">Delete</string>
+    <string name="error_no_players">No players found. Returning to menu.</string>
+    <string name="error_critical">Critical Error: %1$s</string>
 </resources>

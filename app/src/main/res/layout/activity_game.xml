@@ -23,12 +23,12 @@
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:background="?attr/selectableItemBackgroundBorderless" />
 
-    <TextView
+        <TextView
         android:id="@+id/textViewPhaseTitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:text="Phase Title"
+        android:text="@string/phase_title_placeholder"
         android:textColor="@color/white"
         android:textSize="20sp"
         android:textStyle="bold"
@@ -39,21 +39,21 @@
             style="@style/Widget.AppCompat.Button.Small"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Scores" />
+            android:text="@string/button_scores" />
 
         <Button
             android:id="@+id/buttonLogs"
             style="@style/Widget.AppCompat.Button.Small"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Logs" />
+            android:text="@string/button_logs" />
     </LinearLayout>
 
     <TextView
         android:id="@+id/textViewTargetPlayer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Current Player"
+        android:text="@string/current_player_placeholder"
         android:textColor="@color/white"
         android:textSize="18sp"
         app:layout_constraintTop_toBottomOf="@id/layoutHeader"
@@ -79,7 +79,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="20dp"
-            android:text="Question goes here..."
+            android:text="@string/question_placeholder"
             android:textColor="@color/white"
             android:textAlignment="center"
             android:textSize="18sp"
@@ -100,7 +100,7 @@
             android:id="@+id/editTextAnswer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Type your answer here..."
+            android:hint="@string/hint_type_answer"
             android:textColor="@color/white"
             android:textColorHint="#99FFFFFF"
             android:inputType="textCapSentences" />
@@ -109,7 +109,7 @@
             android:id="@+id/buttonSubmitAnswer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Submit Answer"
+            android:text="@string/button_submit_answer"
             android:layout_marginTop="16dp" />
     </LinearLayout>
 
@@ -129,7 +129,7 @@
             android:id="@+id/textViewSelectionPrompt"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Pick the Spotlight player's answer:"
+            android:text="@string/selection_prompt"
             android:textColor="@color/white"
             android:layout_marginBottom="8dp"
             android:textStyle="bold"
@@ -139,7 +139,7 @@
             android:id="@+id/textViewReviewInstructions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Check mark = Matches your answer\nTrash can = Duplicate answer\n\nIf no duplicates or matches, click Start Voting."
+            android:text="@string/review_instructions"
             android:textColor="#BDBDBD"
             android:layout_marginBottom="8dp"
             android:textSize="14sp"
@@ -166,7 +166,7 @@
             android:id="@+id/textViewPassTo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pass the device to [Name]"
+            android:text="@string/pass_device_to"
             android:textColor="@color/white"
             android:textSize="22sp"
             android:textAlignment="center"/>
@@ -175,7 +175,7 @@
             android:id="@+id/buttonReady"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="I am Ready"
+            android:text="@string/button_ready"
             android:layout_marginTop="24dp"/>
     </LinearLayout>
 
@@ -194,7 +194,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Round Results"
+            android:text="@string/round_results_title"
             android:textColor="@color/white"
             android:textStyle="bold"
             android:textSize="18sp"/>
@@ -211,7 +211,7 @@
         android:id="@+id/buttonAction"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Continue"
+        android:text="@string/button_continue"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

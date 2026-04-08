@@ -25,7 +25,7 @@
         android:id="@+id/textViewTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="SPOTLIGHT"
+        android:text="@string/title_spotlight"
         android:textSize="56sp"
         android:fontFamily="sans-serif-black"
         android:letterSpacing="0.1"
@@ -39,7 +39,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="THE PARTY GAME"
+        android:text="@string/subtitle_party_game"
         android:textColor="#FFFFFF"
         android:letterSpacing="0.3"
         android:textSize="14sp"
@@ -67,7 +67,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="PASS AND PLAY"
+            android:text="@string/button_pass_and_play"
             android:textColor="#121212"
             android:textStyle="bold"
             android:textSize="18sp" />
@@ -93,7 +93,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="ONLINE MULTIPLAYER"
+            android:text="@string/button_online_multiplayer"
             android:textColor="#FFFFFF"
             android:textStyle="bold"
             android:textSize="18sp" />
