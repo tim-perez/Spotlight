@@ -52,6 +52,22 @@ public class GameRepository {
         return roomData;
     }
 
+    public interface OnRoomDataListener {
+        void onDataChange(GameRoom room);
+    }
+
+    public void getRoomDataOnce(String roomCode, OnRoomDataListener listener) {
+        roomsRef.child(roomCode).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                listener.onDataChange(snapshot.getValue(GameRoom.class));
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
     public void updateRoomStatus(String status) {
         if (currentRoomRef != null) {
             currentRoomRef.child("status").setValue(status);

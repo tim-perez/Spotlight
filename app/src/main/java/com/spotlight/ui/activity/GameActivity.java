@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -203,6 +204,15 @@ public class GameActivity extends AppCompatActivity {
 
         viewModel.setPhase(phase);
         
+        if (phase == Phase.VOTING && viewModel.isHost()) {
+            Map<String, String> votes = room.getVotes();
+            Map<String, Player> playersMap = room.getPlayers();
+            if (votes != null && votes.size() == playersMap.size() - 1) {
+                // All players (except spotlight) have voted
+                viewModel.calculateMultiplayerScores(null);
+            }
+        }
+
         Player spotlightPlayer = room.getPlayers().get(spotlightId);
         if (spotlightPlayer != null) {
             updateMultiplayerUI(room, spotlightPlayer);
@@ -251,7 +261,22 @@ public class GameActivity extends AppCompatActivity {
                     binding.textViewQuestion.setText(R.string.spotlight_reviewing);
                 }
                 break;
-            // ... (Other phases follow similar pattern using binding) ...
+            case VOTING:
+                binding.textViewPhaseTitle.setText(R.string.phase_voting);
+                if (isSpotlight) {
+                    binding.textViewQuestion.setText(R.string.wait_for_votes);
+                } else {
+                    Map<String, String> currentVotes = room.getVotes();
+                    if (currentVotes == null || !currentVotes.containsKey(playerId)) {
+                        binding.layoutSelection.setVisibility(View.VISIBLE);
+                        binding.textViewSelectionPrompt.setText(R.string.selection_prompt);
+                        prepareMultiplayerVotingUI(room);
+                    } else {
+                        binding.textViewQuestion.setText(R.string.waiting_for_others);
+                    }
+                }
+                break;
+
             case RESULTS:
                 binding.textViewPhaseTitle.setText(R.string.phase_round_results);
                 binding.layoutResults.setVisibility(View.VISIBLE);
@@ -259,6 +284,16 @@ public class GameActivity extends AppCompatActivity {
                 binding.buttonAction.setVisibility(View.VISIBLE);
                 binding.buttonAction.setText(viewModel.isHost() ? getString(R.string.button_next_round) : getString(R.string.button_wait_for_host));
                 binding.buttonAction.setEnabled(viewModel.isHost());
+                break;
+
+            case FINISHED:
+                binding.textViewPhaseTitle.setText(R.string.phase_game_over);
+                binding.layoutResults.setVisibility(View.VISIBLE);
+                showMultiplayerResultsUI(room);
+                binding.buttonAction.setVisibility(View.VISIBLE);
+                binding.buttonAction.setText(R.string.button_exit_game);
+                binding.buttonAction.setEnabled(true);
+                showConfettiAnimation();
                 break;
         }
     }
@@ -327,6 +362,10 @@ public class GameActivity extends AppCompatActivity {
         }
     }
 
+    private void startVotingLocal() {
+        viewModel.startVotingLocal();
+    }
+
     private void submitMultiplayerAnswer() {
         String answer = binding.editTextAnswer.getText().toString().trim();
         if (answer.isEmpty()) return;
@@ -336,27 +375,66 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void startNextMultiplayerRound() {
-        // Implementation similar to previous but using roomRef
+        if (viewModel.getCurrentPhase().getValue() == Phase.FINISHED) {
+            finish();
+            return;
+        }
+        viewModel.startNextMultiplayerRound();
     }
 
     private void startVotingPhase() {
         if (!multiplayerMatchedIndices.isEmpty()) {
-            // Logic to calculate scores directly
+            // Logic to calculate scores directly if spotlight matched some answers
+            viewModel.calculateMultiplayerScores(multiplayerMatchedIndices);
         } else {
             roomRef.child("status").setValue("VOTING");
         }
     }
 
     private void showScoreSheet() {
-        // Implementation
+        StringBuilder sb = new StringBuilder();
+        sb.append(getString(R.string.scoreboard_desc));
+        
+        List<Player> sortedPlayers = new ArrayList<>(players);
+        Collections.sort(sortedPlayers, (p1, p2) -> Integer.compare(p2.getScore(), p1.getScore()));
+        
+        for (Player p : sortedPlayers) {
+            sb.append(p.getName()).append(": ").append(p.getScore()).append("\n");
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_scoreboard_title)
+                .setMessage(sb.toString())
+                .setPositiveButton(R.string.ok, null)
+                .show();
     }
 
     private void showLogs() {
-        // Implementation
+        List<String> logs = viewModel.getLogs().getValue();
+        if (logs == null || logs.isEmpty()) {
+            Toast.makeText(this, R.string.error_no_logs, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (String log : logs) {
+            sb.append("- ").append(log).append("\n");
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_logs_title)
+                .setMessage(sb.toString())
+                .setPositiveButton(R.string.ok, null)
+                .show();
     }
 
     private void showLeaveConfirmation() {
-        // Implementation
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_leave_game_title)
+                .setMessage(R.string.dialog_leave_game_message)
+                .setPositiveButton(R.string.leave, (dialog, which) -> finish())
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     private void prepareReviewUI(GameRoom room) {
@@ -412,7 +490,7 @@ public class GameActivity extends AppCompatActivity {
 
     private void prepareLocalVotingUI() {
         binding.layoutSelection.setVisibility(View.VISIBLE);
-        binding.textViewSelectionPrompt.setText(getString(R.string.vote_selection_prompt, players.get(viewModel.getCurrentPlayerIndex()).getName()));
+        binding.textViewSelectionPrompt.setText(getString(R.string.voting_prompt_format, players.get(viewModel.getCurrentPlayerIndex()).getName()));
         
         List<String> choices = viewModel.getCurrentChoices().getValue();
         AnswerChoiceAdapter adapter = new AnswerChoiceAdapter(choices, new AnswerChoiceAdapter.OnChoiceActionListener() {
@@ -432,8 +510,26 @@ public class GameActivity extends AppCompatActivity {
         binding.recyclerViewResults.setAdapter(new ResultAdapter(playerList));
     }
 
+    private void prepareMultiplayerVotingUI(GameRoom room) {
+        List<String> choices = new ArrayList<>(room.getGuesses().values());
+        Collections.shuffle(choices);
+
+        AnswerChoiceAdapter adapter = new AnswerChoiceAdapter(choices, new AnswerChoiceAdapter.OnChoiceActionListener() {
+            @Override
+            public void onChoiceSelected(String choice) {
+                roomRef.child("votes").child(playerId).setValue(choice);
+                binding.layoutSelection.setVisibility(View.GONE);
+            }
+        });
+        binding.recyclerViewChoices.setLayoutManager(new LinearLayoutManager(this));
+        binding.recyclerViewChoices.setAdapter(adapter);
+    }
+
     private void showMultiplayerResultsUI(GameRoom room) {
-        // Implementation
+        List<Player> playerList = new ArrayList<>(room.getPlayers().values());
+        Collections.sort(playerList, (p1, p2) -> Integer.compare(p2.getScore(), p1.getScore()));
+        binding.recyclerViewResults.setLayoutManager(new LinearLayoutManager(this));
+        binding.recyclerViewResults.setAdapter(new ResultAdapter(playerList));
     }
 
     private void setupLottieView(LottieAnimationView view) {

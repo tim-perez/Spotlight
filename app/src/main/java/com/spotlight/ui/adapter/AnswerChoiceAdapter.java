@@ -12,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.spotlight.R;
 
+import com.spotlight.databinding.ItemChoiceBinding;
+
 import java.util.List;
 
 public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapter.ChoiceViewHolder> {
@@ -45,41 +47,41 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
     @NonNull
     @Override
     public ChoiceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_choice, parent, false);
-        return new ChoiceViewHolder(view);
+        ItemChoiceBinding binding = ItemChoiceBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        return new ChoiceViewHolder(binding);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ChoiceViewHolder holder, int position) {
         String choice = choices.get(position);
-        holder.textViewChoice.setText(choice);
+        holder.binding.textViewChoice.setText(choice);
         
         if (isReviewMode) {
-            holder.buttonMatch.setVisibility(View.VISIBLE);
-            holder.buttonDelete.setVisibility(View.VISIBLE);
-            holder.itemView.setOnClickListener(null);
+            holder.binding.buttonMatch.setVisibility(View.VISIBLE);
+            holder.binding.buttonDelete.setVisibility(View.VISIBLE);
+            holder.binding.getRoot().setOnClickListener(null);
             
             if (matchedPositions.contains(position)) {
-                holder.itemView.setBackgroundColor(Color.parseColor("#2E7D32")); // Darker Green
-                holder.buttonMatch.setImageResource(android.R.drawable.checkbox_on_background);
+                holder.binding.getRoot().setBackgroundColor(Color.parseColor("#2E7D32")); // Darker Green
+                holder.binding.buttonMatch.setImageResource(android.R.drawable.checkbox_on_background);
             } else {
-                holder.itemView.setBackgroundColor(Color.parseColor("#1E1E1E")); // Dark Surface Color
-                holder.buttonMatch.setImageResource(android.R.drawable.checkbox_off_background);
+                holder.binding.getRoot().setBackgroundColor(Color.parseColor("#1E1E1E")); // Dark Surface Color
+                holder.binding.buttonMatch.setImageResource(android.R.drawable.checkbox_off_background);
             }
 
-            holder.buttonMatch.setOnClickListener(v -> listener.onMatchClicked(choice, holder.getAdapterPosition()));
-            holder.buttonDelete.setOnClickListener(v -> listener.onDeleteClicked(holder.getAdapterPosition()));
+            holder.binding.buttonMatch.setOnClickListener(v -> listener.onMatchClicked(choice, holder.getAdapterPosition()));
+            holder.binding.buttonDelete.setOnClickListener(v -> listener.onDeleteClicked(holder.getAdapterPosition()));
         } else {
-            holder.buttonMatch.setVisibility(View.GONE);
-            holder.buttonDelete.setVisibility(View.GONE);
+            holder.binding.buttonMatch.setVisibility(View.GONE);
+            holder.binding.buttonDelete.setVisibility(View.GONE);
             
             if (selectedPosition == position) {
-                holder.itemView.setBackgroundColor(Color.parseColor("#333333")); // Selected Dark Gray
+                holder.binding.getRoot().setBackgroundColor(Color.parseColor("#333333")); // Selected Dark Gray
             } else {
-                holder.itemView.setBackgroundColor(Color.TRANSPARENT);
+                holder.binding.getRoot().setBackgroundColor(Color.TRANSPARENT);
             }
 
-            holder.itemView.setOnClickListener(v -> {
+            holder.binding.getRoot().setOnClickListener(v -> {
                 int previousSelected = selectedPosition;
                 selectedPosition = holder.getAdapterPosition();
                 notifyItemChanged(previousSelected);
@@ -95,15 +97,11 @@ public class AnswerChoiceAdapter extends RecyclerView.Adapter<AnswerChoiceAdapte
     }
 
     static class ChoiceViewHolder extends RecyclerView.ViewHolder {
-        TextView textViewChoice;
-        ImageButton buttonMatch;
-        ImageButton buttonDelete;
+        final ItemChoiceBinding binding;
 
-        public ChoiceViewHolder(@NonNull View itemView) {
-            super(itemView);
-            textViewChoice = itemView.findViewById(R.id.textViewChoice);
-            buttonMatch = itemView.findViewById(R.id.buttonMatch);
-            buttonDelete = itemView.findViewById(R.id.buttonDelete);
+        public ChoiceViewHolder(@NonNull ItemChoiceBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
         }
     }
 }

@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.spotlight.R;
+import com.spotlight.databinding.ItemPlayerBinding;
 import com.spotlight.model.Player;
 
 import java.util.List;
@@ -23,6 +24,11 @@ public class PlayerAdapter extends RecyclerView.Adapter<PlayerAdapter.PlayerView
         this.playerList = playerList;
     }
 
+    public void setPlayers(List<Player> players) {
+        this.playerList = players;
+        notifyDataSetChanged();
+    }
+
     public void setHostId(String hostId) {
         this.hostId = hostId;
         notifyDataSetChanged();
@@ -31,8 +37,8 @@ public class PlayerAdapter extends RecyclerView.Adapter<PlayerAdapter.PlayerView
     @NonNull
     @Override
     public PlayerViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_player, parent, false);
-        return new PlayerViewHolder(view);
+        ItemPlayerBinding binding = ItemPlayerBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        return new PlayerViewHolder(binding);
     }
 
     @Override
@@ -40,17 +46,17 @@ public class PlayerAdapter extends RecyclerView.Adapter<PlayerAdapter.PlayerView
         Player player = playerList.get(position);
         String displayName = player.getName();
         if (hostId != null && hostId.equals(player.getId())) {
-            displayName += " " + holder.itemView.getContext().getString(R.string.host_suffix);
+            displayName += " " + holder.binding.getRoot().getContext().getString(R.string.host_suffix);
         }
-        holder.textViewName.setText(displayName);
+        holder.binding.textViewPlayerName.setText(displayName);
 
         if (player.getAvatarColor() != 0) {
             GradientDrawable drawable = new GradientDrawable();
             drawable.setShape(GradientDrawable.OVAL);
             drawable.setColor(player.getAvatarColor());
-            holder.viewAvatar.setBackground(drawable);
+            holder.binding.viewAvatarColor.setBackground(drawable);
         } else {
-            holder.viewAvatar.setBackgroundResource(android.R.color.darker_gray);
+            holder.binding.viewAvatarColor.setBackgroundResource(android.R.color.darker_gray);
         }
     }
 
@@ -60,13 +66,11 @@ public class PlayerAdapter extends RecyclerView.Adapter<PlayerAdapter.PlayerView
     }
 
     static class PlayerViewHolder extends RecyclerView.ViewHolder {
-        TextView textViewName;
-        View viewAvatar;
+        final ItemPlayerBinding binding;
 
-        public PlayerViewHolder(@NonNull View itemView) {
-            super(itemView);
-            textViewName = itemView.findViewById(R.id.textViewPlayerName);
-            viewAvatar = itemView.findViewById(R.id.viewAvatarColor);
+        public PlayerViewHolder(@NonNull ItemPlayerBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
         }
     }
 }

@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.spotlight.R;
+import com.spotlight.databinding.ItemResultBinding;
 import com.spotlight.model.Player;
 
 import java.util.List;
@@ -25,23 +26,23 @@ public class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.ResultView
     @NonNull
     @Override
     public ResultViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_result, parent, false);
-        return new ResultViewHolder(view);
+        ItemResultBinding binding = ItemResultBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        return new ResultViewHolder(binding);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ResultViewHolder holder, int position) {
         Player player = players.get(position);
-        holder.textViewName.setText(player.getName());
-        holder.textViewScore.setText(String.valueOf(player.getScore()));
+        holder.binding.textViewResultPlayerName.setText(player.getName());
+        holder.binding.textViewResultScore.setText(String.valueOf(player.getScore()));
 
         if (player.getAvatarColor() != 0) {
             GradientDrawable drawable = new GradientDrawable();
             drawable.setShape(GradientDrawable.OVAL);
             drawable.setColor(player.getAvatarColor());
-            holder.viewAvatar.setBackground(drawable);
+            holder.binding.viewResultAvatarColor.setBackground(drawable);
         } else {
-            holder.viewAvatar.setBackgroundResource(android.R.color.darker_gray);
+            holder.binding.viewResultAvatarColor.setBackgroundResource(android.R.color.darker_gray);
         }
     }
 
@@ -51,15 +52,11 @@ public class ResultAdapter extends RecyclerView.Adapter<ResultAdapter.ResultView
     }
 
     static class ResultViewHolder extends RecyclerView.ViewHolder {
-        TextView textViewName;
-        TextView textViewScore;
-        View viewAvatar;
+        final ItemResultBinding binding;
 
-        public ResultViewHolder(@NonNull View itemView) {
-            super(itemView);
-            textViewName = itemView.findViewById(R.id.textViewResultPlayerName);
-            textViewScore = itemView.findViewById(R.id.textViewResultScore);
-            viewAvatar = itemView.findViewById(R.id.viewResultAvatarColor);
+        public ResultViewHolder(@NonNull ItemResultBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
         }
     }
 }
