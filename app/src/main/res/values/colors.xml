@@ -20,4 +20,5 @@
     <color name="avatar_red">#F44336</color>
     <color name="avatar_teal">#009688</color>
     <color name="avatar_pink">#E91E63</color>
+    <color name="spotlight_background">#E6000000</color>
 </resources>

@@ -49,6 +49,7 @@ public class GameSetupActivity extends AppCompatActivity {
                 binding.colorTeal
         };
         AvatarUtils.setupColorSelection(this, colorViews, color -> viewModel.setSelectedColor(color));
+        AvatarUtils.resetColorSelection(colorViews);
 
         ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, viewModel.getCategories());
         categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);

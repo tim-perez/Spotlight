@@ -1,2 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>0QH9XQYVA0PJWDCE</RequestId><HostId>Y8AeLTJTDugNewhk+eiyJDlnGKXa6cASRBdkEIQR27MFA8vUhAa0O85EuqLTBlEARkmf01Alp+8=</HostId></Error>
+{"v":"5.7.1","fr":30,"ip":0,"op":60,"w":100,"h":100,"nm":"Background Placeholder","ddd":0,"assets":[],"layers":[{"ddd":0,"ind":1,"ty":4,"nm":"BG","sr":1,"ks":{"o":{"a":0,"k":100},"r":{"a":0,"k":0},"p":{"a":0,"k":[50,50,0]},"a":{"a":0,"k":[0,0,0]},"s":{"a":0,"k":[100,100,100]}},"ao":0,"shapes":[{"ty":"gr","it":[{"d":1,"ty":"el","s":{"a":0,"k":[100,100]},"p":{"a":0,"k":[0,0]},"nm":"Circle","mn":"ADBE Vector Shape - Ellipse"},{"ty":"fl","c":{"a":0,"k":[0.07,0.07,0.07,1]},"o":{"a":0,"k":100},"r":1,"nm":"Fill"}],"nm":"Group"}]}]}

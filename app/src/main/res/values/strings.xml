@@ -97,6 +97,13 @@
     <string name="leave">Leave</string>
     <string name="cancel">Cancel</string>
 
+    <!-- Walkthrough -->
+    <string name="walkthrough_title_pass_and_play">Pass and Play</string>
+    <string name="walkthrough_desc_pass_and_play">Play with friends on a single device!</string>
+    <string name="walkthrough_title_multiplayer">Online Multiplayer</string>
+    <string name="walkthrough_desc_multiplayer">Connect with friends online!</string>
+    <string name="walkthrough_tap_to_continue">Tap to continue</string>
+
     <!-- Local Game -->
     <string name="phase_answers">Answers</string>
     <string name="phase_results">Results</string>
