@@ -38,19 +38,6 @@ public class GameViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> currentPlayerIndexLiveData = new MutableLiveData<>(0);
     private final MutableLiveData<List<String>> logs = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<List<String>> currentChoices = new MutableLiveData<>(new ArrayList<>());
-    private final MutableLiveData<Boolean> isWaitingForOthers = new MutableLiveData<>(false);
-    private final MutableLiveData<Boolean> showPassDevice = new MutableLiveData<>(false);
-    private final MutableLiveData<String> spotlightPlayerName = new MutableLiveData<>("");
-    private final MutableLiveData<Integer> spotlightAvatarColor = new MutableLiveData<>(0);
-    private final MutableLiveData<Integer> passToAvatarColor = new MutableLiveData<>(0);
-    private final MutableLiveData<String> passToPlayerName = new MutableLiveData<>("");
-    private final MutableLiveData<String> winnerName = new MutableLiveData<>("");
-    private final MutableLiveData<List<Player>> sortedPlayers = new MutableLiveData<>(new ArrayList<>());
-    private final MutableLiveData<String> selectionPrompt = new MutableLiveData<>("");
-    private final MutableLiveData<String> actionButtonText = new MutableLiveData<>("");
-    private final MutableLiveData<String> phaseTitle = new MutableLiveData<>("");
-    private final MutableLiveData<Set<String>> matchedAnswersLiveData = new MutableLiveData<>(new HashSet<>());
-    private final MutableLiveData<Boolean> actionButtonEnabled = new MutableLiveData<>(false);
 
     private String playerId;
     private String roomCode;
@@ -64,9 +51,6 @@ public class GameViewModel extends AndroidViewModel {
     private final Set<String> localMatchedAnswers = new HashSet<>();
     private final Set<Integer> localDeletedPlayerIndices = new HashSet<>();
     private final Map<Integer, String> localVotesMap = new HashMap<>();
-
-    // Multiplayer state
-    private String selectedVote = null;
 
     public GameViewModel(@NonNull Application application) {
         super(application);
@@ -93,178 +77,11 @@ public class GameViewModel extends AndroidViewModel {
     }
 
     private void setupMultiplayer() {
-        // ViewModel will manage room data and derive its own state
+        // Multi-player logic is partially handled by Repository and Activity observing LiveData
     }
 
-    public void processRoomUpdate(GameRoom room) {
-        if (room == null) return;
-
-        if (room.getPlayers() != null) {
-            setPlayers(new ArrayList<>(room.getPlayers().values()));
-        }
-
-        if (room.getLogs() != null) {
-            setLogs(room.getLogs());
-        }
-
-        String status = room.getStatus();
-        Phase phase = Phase.WAITING_FOR_ANSWERS;
-        if ("REVIEW".equals(status)) phase = Phase.REVIEW;
-        else if ("VOTING".equals(status)) phase = Phase.VOTING;
-        else if ("RESULTS".equals(status)) phase = Phase.RESULTS;
-        else if ("FINISHED".equals(status)) phase = Phase.FINISHED;
-
-        setPhase(phase);
-
-        if (isMultiplayer && room != null) {
-            if (phase == Phase.WAITING_FOR_ANSWERS) {
-                boolean answered = room.getGuesses() != null && room.getGuesses().containsKey(playerId);
-                isWaitingForOthers.setValue(answered);
-            } else if (phase == Phase.VOTING) {
-                boolean voted = room.getVotes() != null && room.getVotes().containsKey(playerId);
-                isWaitingForOthers.setValue(voted);
-            } else {
-                isWaitingForOthers.setValue(false);
-            }
-        }
-
-        // Auto-transition logic for Host
-        if (isHost()) {
-            if (phase == Phase.WAITING_FOR_ANSWERS) {
-                Map<String, String> guesses = room.getGuesses();
-                if (guesses != null && guesses.size() == room.getPlayers().size() && !room.getPlayers().isEmpty()) {
-                    gameRepository.updateRoomStatus("REVIEW");
-                }
-            } else if (phase == Phase.VOTING) {
-                Map<String, String> votes = room.getVotes();
-                Map<String, Player> playersMap = room.getPlayers();
-                if (votes != null && votes.size() == playersMap.size() - 1 && playersMap.size() > 1) {
-                    calculateMultiplayerScores(null);
-                }
-            }
-        }
-
-        String spotlightId = room.getSpotlightPlayerId();
-        if (spotlightId != null) {
-            setSpotlightPlayerId(spotlightId);
-            if (room.getCurrentQuestion() != null) {
-                currentQuestion.setValue(new Question(room.getCurrentQuestion(), ""));
-            }
-        }
-
-        if (phase == Phase.REVIEW || phase == Phase.VOTING) {
-            prepareMultiplayerChoices(room, phase);
-        }
-    }
-
-    private void prepareMultiplayerChoices(GameRoom room, Phase phase) {
-        Map<String, String> guesses = room.getGuesses();
-        if (guesses == null) return;
-
-        String spotlightId = room.getSpotlightPlayerId();
-        List<String> choices = new ArrayList<>();
-
-        if (phase == Phase.REVIEW) {
-            for (Map.Entry<String, String> entry : guesses.entrySet()) {
-                if (!entry.getKey().equals(spotlightId)) {
-                    choices.add(entry.getValue());
-                }
-            }
-        } else if (phase == Phase.VOTING) {
-            if (playerId != null && !playerId.equals(spotlightId)) {
-                String myAnswer = guesses.get(playerId);
-                for (Map.Entry<String, String> entry : guesses.entrySet()) {
-                    if (!entry.getKey().equals(playerId)) {
-                        choices.add(entry.getValue());
-                    }
-                }
-            }
-        }
-
-        Collections.shuffle(choices);
-        currentChoices.setValue(choices);
-    }
-
-    public void submitMultiplayerAnswer(String answer) {
-        if (isMultiplayer && playerId != null) {
-            gameRepository.submitAnswer(playerId, answer);
-        }
-    }
-
-    public void submitMultiplayerVote(String vote) {
-        if (isMultiplayer && playerId != null) {
-            gameRepository.submitVote(playerId, vote);
-        }
-    }
-
-    public String getSelectedVote() {
-        return selectedVote;
-    }
-
-    public void setSelectedVote(String vote) {
-        this.selectedVote = vote;
-        updateUIStrings();
-    }
-
-    private void confirmVote() {
-        if (selectedVote == null) return;
-        if (isMultiplayer) {
-            if (playerId != null) {
-                gameRepository.submitVote(playerId, selectedVote);
-            }
-        } else {
-            submitLocalVote(selectedVote);
-        }
-        selectedVote = null;
-    }
-
-    public boolean isSpotlight() {
-        if (isMultiplayer) {
-            List<Player> playerList = players.getValue();
-            Integer spotlightIdx = spotlightPlayerIndex.getValue();
-            if (playerList == null || spotlightIdx == null || spotlightIdx < 0 || spotlightIdx >= playerList.size()) return false;
-            Player spotlight = playerList.get(spotlightIdx);
-            return playerId != null && playerId.equals(spotlight.getId());
-        } else {
-            return currentPlayerIndex == spotlightIndex;
-        }
-    }
-
-    public void handleAction() {
-        Phase phase = currentPhase.getValue();
-        if (phase == Phase.RESULTS) {
-            if (isMultiplayer) {
-                if (isHost()) startNextMultiplayerRound();
-            } else {
-                startNewRoundLocal();
-            }
-        } else if (phase == Phase.FINISHED) {
-            // Activity should finish
-        } else if (phase == Phase.REVIEW) {
-            Set<String> matched = matchedAnswersLiveData.getValue();
-            if (isMultiplayer) {
-                moveToVotingPhase(matched);
-                matchedAnswersLiveData.setValue(new HashSet<>());
-            } else {
-                if ((matched != null && !matched.isEmpty()) || !localDeletedPlayerIndices.isEmpty()) {
-                    calculateLocalScores();
-                } else {
-                    startVotingLocal();
-                }
-            }
-        } else if (phase == Phase.VOTING) {
-            confirmVote();
-        }
-    }
-
-    public void moveToVotingPhase(Set<String> matchedAnswers) {
-        if (isMultiplayer) {
-            if (matchedAnswers != null && !matchedAnswers.isEmpty()) {
-                calculateMultiplayerScores(matchedAnswers);
-            } else {
-                gameRepository.updateRoomStatus("VOTING");
-            }
-        }
+    public LiveData<GameRoom> getRoomData() {
+        return gameRepository.getRoomData(roomCode);
     }
 
     public LiveData<Phase> getCurrentPhase() {
@@ -283,72 +100,12 @@ public class GameViewModel extends AndroidViewModel {
         return spotlightPlayerIndex;
     }
 
-    public LiveData<GameRoom> getRoomData() {
-        return gameRepository.getRoomData(roomCode);
-    }
-
     public LiveData<List<String>> getLogs() {
         return logs;
     }
 
     public LiveData<List<String>> getCurrentChoices() {
         return currentChoices;
-    }
-
-    public LiveData<Boolean> getIsWaitingForOthers() {
-        return isWaitingForOthers;
-    }
-
-    public LiveData<Boolean> getShowPassDevice() {
-        return showPassDevice;
-    }
-
-    public LiveData<String> getSpotlightPlayerName() {
-        return spotlightPlayerName;
-    }
-
-    public LiveData<Integer> getSpotlightAvatarColor() {
-        return spotlightAvatarColor;
-    }
-
-    public LiveData<Integer> getPassToAvatarColor() {
-        return passToAvatarColor;
-    }
-
-    public LiveData<String> getPassToPlayerName() {
-        return passToPlayerName;
-    }
-
-    public LiveData<String> getWinnerName() {
-        return winnerName;
-    }
-
-    public LiveData<List<Player>> getSortedPlayers() {
-        return sortedPlayers;
-    }
-
-    public LiveData<String> getSelectionPrompt() {
-        return selectionPrompt;
-    }
-
-    public LiveData<String> getActionButtonText() {
-        return actionButtonText;
-    }
-
-    public LiveData<String> getPhaseTitle() {
-        return phaseTitle;
-    }
-
-    public LiveData<Set<String>> getMatchedAnswers() {
-        return matchedAnswersLiveData;
-    }
-
-    public LiveData<Boolean> getActionButtonEnabled() {
-        return actionButtonEnabled;
-    }
-
-    public void hidePassDevice() {
-        showPassDevice.setValue(false);
     }
 
     public LiveData<Integer> getCurrentPlayerIndexLiveData() {
@@ -370,149 +127,21 @@ public class GameViewModel extends AndroidViewModel {
         currentPlayerIndex = spotlightIndex;
         currentPlayerIndexLiveData.setValue(currentPlayerIndex);
         localAnswers.clear();
-        if (players.getValue() != null) {
-            for (int i = 0; i < players.getValue().size(); i++) localAnswers.add(null);
-        }
-        matchedAnswersLiveData.setValue(new HashSet<>());
+        for (int i = 0; i < players.getValue().size(); i++) localAnswers.add(null);
+        localMatchedAnswers.clear();
         localDeletedPlayerIndices.clear();
         localVotesMap.clear();
 
         currentQuestion.setValue(questionRepository.getRandomQuestion());
-        updateSpotlightPlayerName();
         setPhase(Phase.WAITING_FOR_ANSWERS);
-        showPassDevice.setValue(true);
-    }
-
-    private void updateUIStrings() {
-        Phase phase = currentPhase.getValue();
-        if (phase == null) return;
-
-        boolean isSpotlight = isSpotlight();
-        Set<String> matched = matchedAnswersLiveData.getValue();
-        List<Player> playerList = players.getValue();
-
-        switch (phase) {
-            case WAITING_FOR_ANSWERS:
-                if (isMultiplayer) {
-                    phaseTitle.setValue(isSpotlight ? "SPOTLIGHT" : "GUESSING");
-                } else {
-                    phaseTitle.setValue("ANSWERS");
-                }
-                selectionPrompt.setValue(""); // Not used in this phase
-                break;
-
-            case REVIEW:
-                phaseTitle.setValue("REVIEW");
-                if (isSpotlight) {
-                    actionButtonText.setValue((matched == null || matched.isEmpty()) ? "START VOTING" : "REVEAL RESULTS");
-                    actionButtonEnabled.setValue(true);
-                    if (isMultiplayer) {
-                        selectionPrompt.setValue("Review the answers. Match any that are the same as yours.");
-                    } else {
-                        String secret = (localAnswers != null && spotlightIndex < localAnswers.size()) ? localAnswers.get(spotlightIndex) : "";
-                        selectionPrompt.setValue("Your answer: " + secret + "\nMatch any that are the same.");
-                    }
-                } else {
-                    selectionPrompt.setValue("The Spotlight is reviewing answers...");
-                }
-                break;
-
-            case VOTING:
-                phaseTitle.setValue("VOTING");
-                if (!isSpotlight) {
-                    actionButtonText.setValue("CONFIRM VOTE");
-                    actionButtonEnabled.setValue(selectedVote != null);
-                    if (isMultiplayer) {
-                        selectionPrompt.setValue("Pick the answer you think belongs to the Spotlight!");
-                    } else {
-                        String name = (playerList != null && currentPlayerIndex < playerList.size()) ? playerList.get(currentPlayerIndex).getName() : "";
-                        selectionPrompt.setValue(name + ", pick the Spotlight's answer!");
-                    }
-                } else {
-                    selectionPrompt.setValue("Everyone else is voting for your answer...");
-                }
-                break;
-
-            case RESULTS:
-                phaseTitle.setValue(isMultiplayer ? "ROUND RESULTS" : "RESULTS");
-                if (isMultiplayer) {
-                    actionButtonText.setValue(isHost() ? "NEXT ROUND" : "WAITING FOR HOST...");
-                    actionButtonEnabled.setValue(isHost());
-                } else {
-                    actionButtonText.setValue("NEXT ROUND");
-                    actionButtonEnabled.setValue(true);
-                }
-                break;
-
-            case FINISHED:
-                phaseTitle.setValue(isMultiplayer ? "GAME OVER" : "GAME OVER");
-                actionButtonText.setValue("EXIT GAME");
-                actionButtonEnabled.setValue(true);
-                break;
-        }
-    }
-
-    private void updateSpotlightPlayerName() {
-        List<Player> playerList = players.getValue();
-        Integer index = spotlightPlayerIndex.getValue();
-        if (playerList != null && index != null && index >= 0 && index < playerList.size()) {
-            spotlightPlayerName.setValue(playerList.get(index).getName());
-            spotlightAvatarColor.setValue(playerList.get(index).getAvatarColor());
-        }
-    }
-
-    private void updatePassToInfo() {
-        List<Player> playerList = players.getValue();
-        if (playerList != null && currentPlayerIndex >= 0 && currentPlayerIndex < playerList.size()) {
-            passToPlayerName.setValue(playerList.get(currentPlayerIndex).getName());
-            passToAvatarColor.setValue(playerList.get(currentPlayerIndex).getAvatarColor());
-        }
-    }
-
-    private void updateSortedPlayers() {
-        List<Player> playerList = players.getValue();
-        if (playerList != null) {
-            List<Player> sorted = new ArrayList<>(playerList);
-            Collections.sort(sorted, (p1, p2) -> Integer.compare(p2.getScore(), p1.getScore()));
-            sortedPlayers.setValue(sorted);
-        }
-    }
-
-    private void calculateWinner() {
-        List<Player> playerList = players.getValue();
-        if (playerList == null || playerList.isEmpty()) return;
-
-        Player winner = playerList.get(0);
-        for (Player p : playerList) {
-            if (p.getScore() > winner.getScore()) {
-                winner = p;
-            }
-        }
-        winnerName.setValue(winner.getName());
     }
 
     public void setPhase(Phase phase) {
         currentPhase.setValue(phase);
-        if (!isMultiplayer) {
-            boolean shouldShowPass = phase != Phase.RESULTS && phase != Phase.FINISHED;
-            showPassDevice.setValue(shouldShowPass);
-            if (shouldShowPass) {
-                updatePassToInfo();
-            }
-        }
-        if (phase == Phase.RESULTS || phase == Phase.FINISHED) {
-            updateSortedPlayers();
-        }
-        if (phase == Phase.FINISHED) {
-            calculateWinner();
-        }
-        updateUIStrings();
     }
 
     public void setPlayers(List<Player> playerList) {
         this.players.setValue(playerList);
-        updateSpotlightPlayerName();
-        updateSortedPlayers();
     }
 
     public void setCurrentQuestion(String questionText) {
@@ -529,24 +158,13 @@ public class GameViewModel extends AndroidViewModel {
             for (int i = 0; i < playerList.size(); i++) {
                 if (playerList.get(i).getId().equals(spotlightId)) {
                     spotlightPlayerIndex.setValue(i);
-                    updateSpotlightPlayerName();
                     break;
                 }
             }
         }
     }
 
-    public void submitAnswer(String answer) {
-        if (isMultiplayer) {
-            if (playerId != null) {
-                gameRepository.submitAnswer(playerId, answer);
-            }
-        } else {
-            submitLocalAnswer(answer);
-        }
-    }
-
-    private void submitLocalAnswer(String answer) {
+    public void submitLocalAnswer(String answer) {
         localAnswers.set(currentPlayerIndex, answer);
         
         int nextPlayer = (currentPlayerIndex + 1) % players.getValue().size();
@@ -558,9 +176,7 @@ public class GameViewModel extends AndroidViewModel {
         } else {
             currentPlayerIndex = nextPlayer;
             currentPlayerIndexLiveData.setValue(currentPlayerIndex);
-            updatePassToInfo();
             setPhase(Phase.WAITING_FOR_ANSWERS);
-            showPassDevice.setValue(true);
         }
     }
 
@@ -576,22 +192,23 @@ public class GameViewModel extends AndroidViewModel {
     }
 
     public void toggleLocalMatch(String answer) {
-        toggleMatch(answer);
+        if (localMatchedAnswers.contains(answer)) {
+            localMatchedAnswers.remove(answer);
+        } else {
+            localMatchedAnswers.add(answer);
+        }
     }
 
-    public void deleteChoice(int choiceIndex) {
-        if (!isMultiplayer) {
-            localDeletedPlayerIndices.add(choiceIndex);
-            List<String> updatedChoices = new ArrayList<>(currentChoices.getValue());
-            updatedChoices.set(choiceIndex, "--- DELETED ---");
-            currentChoices.setValue(updatedChoices);
-        }
+    public void deleteLocalChoice(int choiceIndex) {
+        localDeletedPlayerIndices.add(choiceIndex);
+        List<String> updatedChoices = new ArrayList<>(currentChoices.getValue());
+        updatedChoices.set(choiceIndex, "--- DELETED ---");
+        currentChoices.setValue(updatedChoices);
     }
 
     public void startVotingLocal() {
         currentPlayerIndex = (spotlightIndex + 1) % players.getValue().size();
         currentPlayerIndexLiveData.setValue(currentPlayerIndex);
-        updateVotingChoicesLocal();
         setPhase(Phase.VOTING);
     }
 
@@ -605,22 +222,8 @@ public class GameViewModel extends AndroidViewModel {
         } else {
             currentPlayerIndex = nextGuesser;
             currentPlayerIndexLiveData.setValue(currentPlayerIndex);
-            updatePassToInfo();
-            updateVotingChoicesLocal();
             setPhase(Phase.VOTING);
-            showPassDevice.setValue(true);
         }
-    }
-
-    private void updateVotingChoicesLocal() {
-        List<String> votingChoices = new ArrayList<>();
-        for (int i = 0; i < localAnswers.size(); i++) {
-            if (i != currentPlayerIndex && localAnswers.get(i) != null) {
-                votingChoices.add(localAnswers.get(i));
-            }
-        }
-        Collections.shuffle(votingChoices);
-        currentChoices.setValue(votingChoices);
     }
 
     public void calculateLocalScores() {
@@ -633,9 +236,8 @@ public class GameViewModel extends AndroidViewModel {
         // 1. Matched answers (Spotlight identified their own answer among others)
         // If the spotlight player detects one of the answers matches their answer,
         // the player who matched gets +4, while everyone else receives +0.
-        Set<String> matched = matchedAnswersLiveData.getValue();
-        if (matched != null && !matched.isEmpty()) {
-            for (String matchedAnswer : matched) {
+        if (!localMatchedAnswers.isEmpty()) {
+            for (String matchedAnswer : localMatchedAnswers) {
                 for (int i = 0; i < localAnswers.size(); i++) {
                     if (i != spotlightIdx && matchedAnswer.equalsIgnoreCase(localAnswers.get(i))) {
                         playerList.get(i).addScore(4);
