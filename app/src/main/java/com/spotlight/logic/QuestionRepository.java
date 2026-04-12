@@ -1,6 +1,9 @@
 package com.spotlight.logic;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+
 import com.spotlight.model.Question;
 
 import org.json.JSONArray;
@@ -13,29 +16,46 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class QuestionRepository {
-    private List<Question> allQuestions;
-    private List<Question> currentPool;
-    private Context context;
+    private List<Question> allQuestions = new ArrayList<>();
+    private List<Question> currentPool = new ArrayList<>();
+    private final Context context;
+
+    public interface OnQuestionsLoadedListener {
+        void onLoaded();
+    }
 
     public QuestionRepository(Context context) {
         this.context = context;
-        allQuestions = new ArrayList<>();
-        loadQuestions();
-        currentPool = new ArrayList<>(allQuestions);
-        Collections.shuffle(currentPool);
     }
 
-    private void loadQuestions() {
-        String json = null;
-        try {
-            InputStream is = context.getAssets().open("questions.json");
+    public void loadQuestionsAsync(OnQuestionsLoadedListener listener) {
+        if (!allQuestions.isEmpty()) {
+            listener.onLoaded();
+            return;
+        }
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            parseJsonFile();
+
+            new Handler(Looper.getMainLooper()).post(() -> {
+                currentPool = new ArrayList<>(allQuestions);
+                Collections.shuffle(currentPool);
+                listener.onLoaded();
+            });
+        });
+    }
+
+    private void parseJsonFile() {
+        try (InputStream is = context.getAssets().open("questions.json")) {
             int size = is.available();
             byte[] buffer = new byte[size];
             is.read(buffer);
-            is.close();
-            json = new String(buffer, StandardCharsets.UTF_8);
+            String json = new String(buffer, StandardCharsets.UTF_8);
 
             JSONArray jsonArray = new JSONArray(json);
             for (int i = 0; i < jsonArray.length(); i++) {
@@ -44,11 +64,9 @@ public class QuestionRepository {
             }
         } catch (IOException | JSONException e) {
             e.printStackTrace();
-            // Fallback if file is missing or corrupt
             allQuestions.add(new Question("What is my favorite childhood memory?", "Personal"));
         }
     }
-
     public List<String> getCategories() {
         List<String> categories = new ArrayList<>();
         categories.add("All");
@@ -61,7 +79,7 @@ public class QuestionRepository {
     }
 
     public void filterByCategory(String category) {
-        if (category.equals("All")) {
+        if ("All".equals(category)) {
             currentPool = new ArrayList<>(allQuestions);
         } else {
             currentPool = new ArrayList<>();
@@ -77,7 +95,6 @@ public class QuestionRepository {
     public Question getRandomQuestion() {
         if (currentPool.isEmpty()) {
             if (allQuestions.isEmpty()) {
-                // Return a hardcoded fallback if everything else fails
                 return new Question("Fallback: If you could have any superpower, what would it be?", "General");
             }
             currentPool = new ArrayList<>(allQuestions);

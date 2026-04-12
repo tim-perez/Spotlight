@@ -1,17 +1,14 @@
 package com.spotlight.logic;
 
-import android.app.Application;
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
 
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
-
 import java.util.UUID;
 
-public class JoinRoomViewModel extends AndroidViewModel {
+public class JoinRoomViewModel extends ViewModel {
 
     private final GameRepository repository;
     private final MutableLiveData<GameRoom> roomData = new MutableLiveData<>();
@@ -23,9 +20,8 @@ public class JoinRoomViewModel extends AndroidViewModel {
     private String playerId;
     private String roomCode;
 
-    public JoinRoomViewModel(@NonNull Application application) {
-        super(application);
-        repository = new GameRepository();
+    public JoinRoomViewModel(GameRepository repository) {
+        this.repository = repository;
     }
 
     public void joinRoom(String roomCode, String playerName, int avatarColor) {

@@ -1,10 +1,8 @@
 package com.spotlight.logic;
 
-import android.app.Application;
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
 
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
@@ -18,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class GameViewModel extends AndroidViewModel {
+public class GameViewModel extends ViewModel {
 
     public enum Phase {
         WAITING_FOR_ANSWERS,
@@ -52,10 +50,9 @@ public class GameViewModel extends AndroidViewModel {
     private final Set<Integer> localDeletedPlayerIndices = new HashSet<>();
     private final Map<Integer, String> localVotesMap = new HashMap<>();
 
-    public GameViewModel(@NonNull Application application) {
-        super(application);
-        gameRepository = new GameRepository();
-        questionRepository = new QuestionRepository(application);
+    public GameViewModel(GameRepository gameRepository, QuestionRepository questionRepository) {
+        this.gameRepository = gameRepository;
+        this.questionRepository = questionRepository;
     }
 
     public void init(boolean isMultiplayer, String roomCode, String playerId, String hostId, List<Player> initialPlayers, String category) {
@@ -65,15 +62,19 @@ public class GameViewModel extends AndroidViewModel {
         this.hostId = hostId;
         this.players.setValue(initialPlayers);
 
-        if (category != null && !category.equals("All")) {
-            questionRepository.filterByCategory(category);
-        }
+        questionRepository.loadQuestionsAsync(() -> {
 
-        if (isMultiplayer) {
-            setupMultiplayer();
-        } else {
-            startNewRoundLocal();
-        }
+            if (category != null && !category.equals("All")) {
+                questionRepository.filterByCategory(category);
+            }
+
+            if (this.isMultiplayer) {
+                setupMultiplayer();
+            } else {
+                startNewRoundLocal();
+            }
+
+        });
     }
 
     private void setupMultiplayer() {
@@ -346,14 +347,20 @@ public class GameViewModel extends AndroidViewModel {
                 if (room == null) return;
 
                 String spotlightId = room.getSpotlightPlayerId();
-                // Allow Host (for voting completion) or Spotlight (for review completion) to calculate
                 if (!isHost() && (playerId == null || !playerId.equals(spotlightId))) return;
 
                 Map<String, Player> playerMap = room.getPlayers();
                 Map<String, String> guesses = room.getGuesses();
                 Map<String, String> votes = room.getVotes();
                 String spotlightAnswer = guesses != null ? guesses.get(spotlightId) : null;
-                List<String> logsList = new ArrayList<>(room.getLogs());
+
+                // Track points to award and logs to generate for the Transaction
+                Map<String, Integer> pointsAwarded = new HashMap<>();
+                List<String> roundLogs = new ArrayList<>();
+
+                // Helper to safely increment the points map
+                java.util.function.BiConsumer<String, Integer> addPoints = (pId, pts) ->
+                        pointsAwarded.put(pId, pointsAwarded.getOrDefault(pId, 0) + pts);
 
                 // 1. Handle matches from Spotlight (Review Phase)
                 if (matchedAnswers != null && !matchedAnswers.isEmpty() && guesses != null) {
@@ -362,8 +369,8 @@ public class GameViewModel extends AndroidViewModel {
                             String pId = entry.getKey();
                             if (!pId.equals(spotlightId) && matchedAnswer.equalsIgnoreCase(entry.getValue())) {
                                 if (playerMap.containsKey(pId)) {
-                                    playerMap.get(pId).addScore(4);
-                                    logsList.add(playerMap.get(pId).getName() + " matched the Spotlight's answer! (+4)");
+                                    addPoints.accept(pId, 4);
+                                    roundLogs.add(playerMap.get(pId).getName() + " matched the Spotlight's answer! (+4)");
                                 }
                             }
                         }
@@ -378,17 +385,17 @@ public class GameViewModel extends AndroidViewModel {
 
                         if (votedAnswer.equals(spotlightAnswer)) {
                             // Correct guess: +2 to guesser, +1 to Spotlight
-                            if (playerMap.containsKey(voterId)) playerMap.get(voterId).addScore(2);
-                            if (playerMap.containsKey(spotlightId)) playerMap.get(spotlightId).addScore(1);
-                            logsList.add(playerMap.get(voterId).getName() + " correctly guessed the Spotlight's answer! (+2 for guesser, +1 for Spotlight)");
+                            if (playerMap.containsKey(voterId)) addPoints.accept(voterId, 2);
+                            if (playerMap.containsKey(spotlightId)) addPoints.accept(spotlightId, 1);
+                            roundLogs.add(playerMap.get(voterId).getName() + " correctly guessed the Spotlight's answer!");
                         } else {
                             // Guessed someone else: +1 to the person guessed
                             for (Map.Entry<String, String> guessEntry : guesses.entrySet()) {
                                 String targetId = guessEntry.getKey();
                                 if (!targetId.equals(spotlightId) && !targetId.equals(voterId) && votedAnswer.equals(guessEntry.getValue())) {
                                     if (playerMap.containsKey(targetId)) {
-                                        playerMap.get(targetId).addScore(1);
-                                        logsList.add(playerMap.get(targetId).getName() + " was guessed by " + playerMap.get(voterId).getName() + "! (+1)");
+                                        addPoints.accept(targetId, 1);
+                                        roundLogs.add(playerMap.get(targetId).getName() + " was guessed by " + playerMap.get(voterId).getName() + "! (+1)");
                                     }
                                 }
                             }
@@ -396,21 +403,19 @@ public class GameViewModel extends AndroidViewModel {
                     }
                 }
 
-                Map<String, Object> updates = new HashMap<>();
-                updates.put("players", playerMap);
-
-                // Check if the game is completed (First to 25 points wins)
+                // 3. Determine if game is finished by checking current scores + new points
                 boolean gameCompleted = false;
-                for (Player p : playerMap.values()) {
-                    if (p.getScore() >= 25) {
+                for (Map.Entry<String, Player> entry : playerMap.entrySet()) {
+                    int currentScore = entry.getValue().getScore();
+                    int addedScore = pointsAwarded.getOrDefault(entry.getKey(), 0);
+                    if ((currentScore + addedScore) >= 25) {
                         gameCompleted = true;
                         break;
                     }
                 }
 
-                updates.put("status", gameCompleted ? "FINISHED" : "RESULTS");
-                updates.put("logs", logsList);
-                gameRepository.updateRoom(updates);
+                // 4. Fire the atomic transaction
+                gameRepository.finalizeRoundTransaction(roomCode, pointsAwarded, roundLogs, gameCompleted);
             }
         });
     }
@@ -418,6 +423,24 @@ public class GameViewModel extends AndroidViewModel {
     public void leaveMultiplayerRoom() {
         if (!isMultiplayer || roomCode == null || playerId == null) return;
         gameRepository.removePlayer(playerId);
+    }
+
+    public void submitMultiplayerAnswer(String answer) {
+        if (isMultiplayer && playerId != null) {
+            gameRepository.submitAnswer(playerId, answer);
+        }
+    }
+
+    public void submitMultiplayerVote(String vote) {
+        if (isMultiplayer && playerId != null) {
+            gameRepository.submitVote(playerId, vote);
+        }
+    }
+
+    public void updateMultiplayerStatus(String status) {
+        if (isMultiplayer) {
+            gameRepository.updateRoomStatus(status);
+        }
     }
 
     @Override

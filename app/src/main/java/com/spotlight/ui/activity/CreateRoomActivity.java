@@ -14,6 +14,7 @@ import com.spotlight.R;
 import com.spotlight.databinding.ActivityCreateRoomBinding;
 import com.spotlight.logic.CreateRoomViewModel;
 import com.spotlight.logic.QuestionRepository;
+import com.spotlight.logic.ViewModelFactory;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 import com.spotlight.ui.adapter.PlayerAdapter;
@@ -36,7 +37,9 @@ public class CreateRoomActivity extends AppCompatActivity {
         binding = ActivityCreateRoomBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        viewModel = new ViewModelProvider(this).get(CreateRoomViewModel.class);
+        // Create the factory and pass it to the ViewModelProvider
+        ViewModelFactory factory = new ViewModelFactory(this);
+        viewModel = new ViewModelProvider(this, factory).get(CreateRoomViewModel.class);
 
         initViews();
         setupObservers();
@@ -54,11 +57,6 @@ public class CreateRoomActivity extends AppCompatActivity {
         };
         AvatarUtils.setupColorSelection(this, colorViews, color -> selectedColor = color);
         AvatarUtils.resetColorSelection(colorViews);
-
-        QuestionRepository questionRepository = new QuestionRepository(this);
-        ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, questionRepository.getCategories());
-        categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        binding.spinnerCategory.setAdapter(categoryAdapter);
 
         binding.buttonBack.setOnClickListener(v -> {
             viewModel.leaveRoom();
@@ -125,6 +123,14 @@ public class CreateRoomActivity extends AppCompatActivity {
                     startActivity(intent);
                     finish();
                 }
+            }
+        });
+
+        viewModel.getCategoriesLiveData().observe(this, categories -> {
+            if (categories != null && !categories.isEmpty()) {
+                ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, categories);
+                categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                binding.spinnerCategory.setAdapter(categoryAdapter);
             }
         });
     }

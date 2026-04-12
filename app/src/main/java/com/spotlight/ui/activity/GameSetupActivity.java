@@ -15,6 +15,7 @@ import com.spotlight.R;
 import com.spotlight.databinding.ActivityGameSetupBinding;
 import com.spotlight.databinding.DialogEditPlayerBinding;
 import com.spotlight.logic.GameSetupViewModel;
+import com.spotlight.logic.ViewModelFactory;
 import com.spotlight.model.Player;
 import com.spotlight.ui.adapter.PlayerAdapter;
 import com.spotlight.util.AvatarUtils;
@@ -35,7 +36,8 @@ public class GameSetupActivity extends AppCompatActivity {
         binding = ActivityGameSetupBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        viewModel = new ViewModelProvider(this).get(GameSetupViewModel.class);
+        ViewModelFactory factory = new ViewModelFactory(this);
+        viewModel = new ViewModelProvider(this, factory).get(GameSetupViewModel.class);
 
         initViews();
         setupObservers();
@@ -52,10 +54,6 @@ public class GameSetupActivity extends AppCompatActivity {
         };
         AvatarUtils.setupColorSelection(this, colorViews, color -> viewModel.setSelectedColor(color));
         AvatarUtils.resetColorSelection(colorViews);
-
-        ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, viewModel.getCategories());
-        categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        binding.spinnerCategory.setAdapter(categoryAdapter);
 
         binding.buttonBack.setOnClickListener(v -> finish());
 
@@ -101,6 +99,14 @@ public class GameSetupActivity extends AppCompatActivity {
     private void setupObservers() {
         viewModel.getPlayers().observe(this, players -> {
             adapter.setPlayers(players);
+        });
+
+        viewModel.getCategoriesLiveData().observe(this, categories -> {
+            if (categories != null && !categories.isEmpty()) {
+                ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, categories);
+                categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                binding.spinnerCategory.setAdapter(categoryAdapter);
+            }
         });
     }
 
