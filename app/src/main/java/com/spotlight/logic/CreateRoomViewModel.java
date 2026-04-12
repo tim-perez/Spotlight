@@ -1,10 +1,8 @@
 package com.spotlight.logic;
 
-import android.app.Application;
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
 
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
@@ -17,21 +15,29 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
-public class CreateRoomViewModel extends AndroidViewModel {
+public class CreateRoomViewModel extends ViewModel {
 
     private final GameRepository repository;
     private final QuestionRepository questionRepository;
     private final MutableLiveData<GameRoom> roomData = new MutableLiveData<>();
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isRoomCreated = new MutableLiveData<>(false);
+    private final MutableLiveData<List<String>> categories = new MutableLiveData<>();
 
     private String playerId;
     private String roomCode;
 
-    public CreateRoomViewModel(@NonNull Application application) {
-        super(application);
-        repository = new GameRepository();
-        questionRepository = new QuestionRepository(application);
+    public CreateRoomViewModel(GameRepository repository, QuestionRepository questionRepository) {
+        this.repository = repository;
+        this.questionRepository = questionRepository;
+
+        this.questionRepository.loadQuestionsAsync(() -> {
+            categories.postValue(this.questionRepository.getCategories());
+        });
+    }
+
+    public LiveData<List<String>> getCategoriesLiveData() {
+        return categories;
     }
 
     public void createRoom(String hostName, int avatarColor) {

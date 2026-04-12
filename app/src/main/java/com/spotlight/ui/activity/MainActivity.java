@@ -53,11 +53,18 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        buttonHowToPlay.setOnClickListener(v -> {
-            showHowToPlayDialog();
-        });
+        buttonHowToPlay.setOnClickListener(v -> showHowToPlayDialog());
 
-        buttonPassAndPlay.post(this::startWalkthrough);
+        android.content.SharedPreferences prefs = getSharedPreferences("SpotlightPrefs", MODE_PRIVATE);
+        boolean hasSeenWalkthrough = prefs.getBoolean("hasSeenWalkthrough", false);
+
+        if (!hasSeenWalkthrough) {
+            buttonPassAndPlay.post(() -> {
+                startWalkthrough();
+                // Save that they have seen it, so it never auto-plays again
+                prefs.edit().putBoolean("hasSeenWalkthrough", true).apply();
+            });
+        }
     }
 
     private void showHowToPlayDialog() {

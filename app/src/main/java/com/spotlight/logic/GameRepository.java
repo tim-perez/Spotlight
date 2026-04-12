@@ -9,6 +9,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.Transaction;
+import com.google.firebase.database.MutableData;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 import com.spotlight.model.Question;
@@ -142,5 +144,45 @@ public class GameRepository {
         if (currentRoomRef != null && roomListener != null) {
             currentRoomRef.removeEventListener(roomListener);
         }
+    }
+
+    public void finalizeRoundTransaction(String roomCode, Map<String, Integer> pointsAwarded, List<String> newLogs, boolean isGameFinished) {
+        DatabaseReference currentRoomRef = roomsRef.child(roomCode);
+        currentRoomRef.runTransaction(new Transaction.Handler() {
+            @NonNull
+            @Override
+            public Transaction.Result doTransaction(@NonNull MutableData mutableData) {
+                GameRoom room = mutableData.getValue(GameRoom.class);
+                if (room == null) return Transaction.success(mutableData);
+
+                Map<String, Player> players = room.getPlayers();
+                if (players != null) {
+                    for (Map.Entry<String, Integer> entry : pointsAwarded.entrySet()) {
+                        Player p = players.get(entry.getKey());
+                        if (p != null) {
+                            p.addScore(entry.getValue());
+                        }
+                    }
+                }
+
+                // 2. Safely append new logs
+                List<String> logs = room.getLogs();
+                if (logs == null) logs = new ArrayList<>();
+                logs.addAll(newLogs);
+                room.setLogs(logs);
+
+                // 3. Update Status
+                room.setStatus(isGameFinished ? "FINISHED" : "RESULTS");
+
+                mutableData.setValue(room);
+                return Transaction.success(mutableData);
+            }
+
+            @Override
+            public void onComplete(DatabaseError error, boolean committed, DataSnapshot currentData) {
+                if (error != null) {
+                }
+            }
+        });
     }
 }

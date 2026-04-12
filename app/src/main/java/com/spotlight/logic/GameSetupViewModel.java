@@ -1,32 +1,34 @@
 package com.spotlight.logic;
 
-import android.app.Application;
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
 
 import com.spotlight.model.Player;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GameSetupViewModel extends AndroidViewModel {
+public class GameSetupViewModel extends ViewModel {
 
     private final MutableLiveData<List<Player>> players = new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<List<String>> categories = new MutableLiveData<>();
     private final QuestionRepository questionRepository;
     private int selectedColor = 0;
 
-    public GameSetupViewModel(@NonNull Application application) {
-        super(application);
-        questionRepository = new QuestionRepository(application);
+    public GameSetupViewModel(QuestionRepository questionRepository) {
+        this.questionRepository = questionRepository;
+
+        this.questionRepository.loadQuestionsAsync(() -> {
+            categories.postValue(this.questionRepository.getCategories());
+        });
     }
 
     public LiveData<List<Player>> getPlayers() {
         return players;
     }
 
-    public List<String> getCategories() {
-        return questionRepository.getCategories();
+    public LiveData<List<String>> getCategoriesLiveData() {
+        return categories;
     }
 
     public void addPlayer(String name) {

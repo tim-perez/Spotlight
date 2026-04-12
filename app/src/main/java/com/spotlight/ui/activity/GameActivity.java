@@ -15,13 +15,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.spotlight.R;
 import com.spotlight.databinding.ActivityGameBinding;
 import com.spotlight.logic.GameViewModel;
 import com.spotlight.logic.GameViewModel.Phase;
+import com.spotlight.logic.ViewModelFactory;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 import com.spotlight.ui.adapter.AnswerChoiceAdapter;
@@ -55,7 +55,6 @@ public class GameActivity extends AppCompatActivity {
     private Phase lastProcessedPhase = null;
 
     private MediaPlayer mediaPlayerCorrect, mediaPlayerReveal;
-    private DatabaseReference roomRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +62,8 @@ public class GameActivity extends AppCompatActivity {
         binding = ActivityGameBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        viewModel = new ViewModelProvider(this).get(GameViewModel.class);
+        ViewModelFactory factory = new ViewModelFactory(this);
+        viewModel = new ViewModelProvider(this, factory).get(GameViewModel.class);
 
         initFromIntent();
         initViews();
@@ -77,10 +77,6 @@ public class GameActivity extends AppCompatActivity {
         String category = getIntent().getStringExtra("category");
         viewModel.init(isMultiplayer, roomCode, playerId, hostId, players, category);
         setupObservers();
-
-        if (isMultiplayer) {
-            roomRef = FirebaseDatabase.getInstance().getReference("rooms").child(roomCode);
-        }
     }
 
     private void initFromIntent() {
@@ -134,6 +130,8 @@ public class GameActivity extends AppCompatActivity {
                     handleRoomUpdate(room);
                 }
             });
+
+
         }
     }
 
@@ -241,11 +239,11 @@ public class GameActivity extends AppCompatActivity {
         else if ("FINISHED".equals(status)) phase = Phase.FINISHED;
 
         viewModel.setPhase(phase);
-        
+
         if (phase == Phase.WAITING_FOR_ANSWERS && viewModel.isHost()) {
             Map<String, String> guesses = room.getGuesses();
             if (guesses != null && guesses.size() == room.getPlayers().size() && room.getPlayers().size() > 0) {
-                roomRef.child("status").setValue("REVIEW");
+                viewModel.updateMultiplayerStatus("REVIEW");
             }
         }
 
@@ -400,7 +398,7 @@ public class GameActivity extends AppCompatActivity {
             startVotingPhase();
         } else if (currentPhase == Phase.VOTING) {
             if (selectedVote != null) {
-                roomRef.child("votes").child(playerId).setValue(selectedVote);
+                viewModel.submitMultiplayerVote(selectedVote);
                 binding.layoutSelection.setVisibility(View.GONE);
                 binding.buttonAction.setVisibility(View.GONE);
                 selectedVote = null;
@@ -439,7 +437,7 @@ public class GameActivity extends AppCompatActivity {
     private void submitMultiplayerAnswer() {
         String answer = binding.editTextAnswer.getText().toString().trim();
         if (answer.isEmpty()) return;
-        roomRef.child("guesses").child(playerId).setValue(answer);
+        viewModel.submitMultiplayerAnswer(answer);
         binding.editTextAnswer.setText("");
         binding.layoutAnswerInput.setVisibility(View.GONE);
     }
@@ -458,13 +456,11 @@ public class GameActivity extends AppCompatActivity {
 
     private void startVotingPhase() {
         if (!multiplayerMatchedAnswers.isEmpty()) {
-            // Logic to calculate scores directly if spotlight matched some answers
             viewModel.calculateMultiplayerScores(multiplayerMatchedAnswers);
         } else {
-            roomRef.child("status").setValue("VOTING");
+            viewModel.updateMultiplayerStatus("VOTING");
         }
     }
-
     private void showScoreSheet() {
         StringBuilder sb = new StringBuilder();
         sb.append(getString(R.string.scoreboard_desc));
