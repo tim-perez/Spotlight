@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
+import com.spotlight.model.RoomStatus;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -85,7 +86,7 @@ public class CreateRoomViewModel extends ViewModel {
         String spotlightId = !playersList.isEmpty() ? playersList.get(0).getId() : room.getHostId();
 
         Map<String, Object> updates = new HashMap<>();
-        updates.put("status", "IN_PROGRESS");
+        updates.put("status", RoomStatus.WAITING_FOR_ANSWERS);
         updates.put("category", category);
         updates.put("spotlightPlayerId", spotlightId);
         updates.put("currentQuestion", initialQuestion);

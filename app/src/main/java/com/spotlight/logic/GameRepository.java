@@ -14,7 +14,9 @@ import com.google.firebase.database.MutableData;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 import com.spotlight.model.Question;
+import com.spotlight.model.RoomStatus;
 
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,9 +73,9 @@ public class GameRepository {
         });
     }
 
-    public void updateRoomStatus(String status) {
+    public void updateRoomStatus(RoomStatus status) {
         if (currentRoomRef != null) {
-            currentRoomRef.child("status").setValue(status);
+            currentRoomRef.child("status").setValue(status.name());
         }
     }
 
@@ -105,7 +107,7 @@ public class GameRepository {
         roomsRef.child(roomCode).get().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult().exists()) {
                 GameRoom room = task.getResult().getValue(GameRoom.class);
-                if (room != null && "WAITING".equals(room.getStatus())) {
+                if (room != null && room.getStatusEnum() == RoomStatus.WAITING) {
                     currentRoomRef = roomsRef.child(roomCode);
                     currentRoomRef.child("players").child(player.getId()).setValue(player)
                             .addOnSuccessListener(aVoid -> listener.onSuccess(room))
@@ -155,6 +157,11 @@ public class GameRepository {
                 GameRoom room = mutableData.getValue(GameRoom.class);
                 if (room == null) return Transaction.success(mutableData);
 
+                // --- THE BULLETPROOF LOCK ---
+                if (room.getStatusEnum() == RoomStatus.RESULTS || room.getStatusEnum() == RoomStatus.FINISHED) {
+                    return Transaction.success(mutableData);
+                }
+
                 Map<String, Player> players = room.getPlayers();
                 if (players != null) {
                     for (Map.Entry<String, Integer> entry : pointsAwarded.entrySet()) {
@@ -165,14 +172,12 @@ public class GameRepository {
                     }
                 }
 
-                // 2. Safely append new logs
                 List<String> logs = room.getLogs();
                 if (logs == null) logs = new ArrayList<>();
                 logs.addAll(newLogs);
                 room.setLogs(logs);
 
-                // 3. Update Status
-                room.setStatus(isGameFinished ? "FINISHED" : "RESULTS");
+                room.setStatusEnum(isGameFinished ? RoomStatus.FINISHED : RoomStatus.RESULTS);
 
                 mutableData.setValue(room);
                 return Transaction.success(mutableData);
@@ -180,9 +185,9 @@ public class GameRepository {
 
             @Override
             public void onComplete(DatabaseError error, boolean committed, DataSnapshot currentData) {
-                if (error != null) {
-                }
             }
         });
     }
 }
+
+

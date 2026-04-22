@@ -17,6 +17,7 @@ import com.spotlight.logic.QuestionRepository;
 import com.spotlight.logic.ViewModelFactory;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
+import com.spotlight.model.RoomStatus;
 import com.spotlight.ui.adapter.PlayerAdapter;
 import com.spotlight.util.AvatarUtils;
 
@@ -112,7 +113,7 @@ public class CreateRoomActivity extends AppCompatActivity {
                 adapter.setHostId(room.getHostId());
                 adapter.notifyDataSetChanged();
 
-                if ("IN_PROGRESS".equals(room.getStatus())) {
+                if (room.getStatusEnum() != RoomStatus.WAITING) {
                     Intent intent = new Intent(this, GameActivity.class);
                     intent.putExtra("players", new ArrayList<>(playersList));
                     intent.putExtra("isMultiplayer", true);
