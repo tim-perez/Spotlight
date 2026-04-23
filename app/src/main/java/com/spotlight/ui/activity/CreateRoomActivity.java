@@ -13,11 +13,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.spotlight.R;
 import com.spotlight.databinding.ActivityCreateRoomBinding;
 import com.spotlight.logic.CreateRoomViewModel;
-import com.spotlight.logic.QuestionRepository;
 import com.spotlight.logic.ViewModelFactory;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
-import com.spotlight.model.RoomStatus;
 import com.spotlight.ui.adapter.PlayerAdapter;
 import com.spotlight.util.AvatarUtils;
 
@@ -38,7 +36,6 @@ public class CreateRoomActivity extends AppCompatActivity {
         binding = ActivityCreateRoomBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Create the factory and pass it to the ViewModelProvider
         ViewModelFactory factory = new ViewModelFactory(this);
         viewModel = new ViewModelProvider(this, factory).get(CreateRoomViewModel.class);
 
@@ -74,12 +71,19 @@ public class CreateRoomActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.hint_enter_your_name, Toast.LENGTH_SHORT).show();
                 return;
             }
+
+            // Visual feedback that the button was clicked
+            binding.buttonGenerateRoom.setText("Creating...");
+            binding.buttonGenerateRoom.setEnabled(false);
+
             viewModel.createRoom(name, selectedColor);
         });
 
         binding.buttonStartMultiplayer.setOnClickListener(v -> {
             GameRoom room = viewModel.getRoomData().getValue();
-            if (room != null && room.getPlayers().size() < 3) {
+
+            // THE FIX: Lowered from < 3 to < 1 so you can test the game by yourself!
+            if (room != null && room.getPlayers().size() < 1) {
                 Toast.makeText(this, R.string.error_wait_players, Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -102,7 +106,9 @@ public class CreateRoomActivity extends AppCompatActivity {
 
         viewModel.getErrorMessage().observe(this, message -> {
             if (message != null) {
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                binding.buttonGenerateRoom.setText("Create Room");
+                binding.buttonGenerateRoom.setEnabled(true);
             }
         });
 
@@ -113,7 +119,8 @@ public class CreateRoomActivity extends AppCompatActivity {
                 adapter.setHostId(room.getHostId());
                 adapter.notifyDataSetChanged();
 
-                if (room.getStatusEnum() != RoomStatus.WAITING) {
+                // THE FIX: Check against a raw String instead of getStatusEnum()
+                if (!"WAITING".equals(room.getStatus())) {
                     Intent intent = new Intent(this, GameActivity.class);
                     intent.putExtra("players", new ArrayList<>(playersList));
                     intent.putExtra("isMultiplayer", true);

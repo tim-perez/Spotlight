@@ -24,7 +24,6 @@ public class GameViewModel extends ViewModel {
     private final GameRepository gameRepository;
     private final QuestionRepository questionRepository;
 
-    // The Strategy Interface! This handles everything now.
     private GameSession session;
     private String roomCode;
 
@@ -36,14 +35,12 @@ public class GameViewModel extends ViewModel {
     public void init(boolean isMultiplayer, String roomCode, String playerId, String hostId, List<Player> initialPlayers, String category) {
         this.roomCode = roomCode;
 
-        // 1. Instantiate the correct engine immediately so LiveData is ready for the Activity
         if (isMultiplayer) {
             session = new MultiplayerGameSession(gameRepository, questionRepository);
         } else {
             session = new LocalGameSession(questionRepository);
         }
 
-        // 2. Wait for async questions to load, then start the engine!
         questionRepository.loadQuestionsAsync(() -> {
             session.init(roomCode, playerId, hostId, initialPlayers, category);
         });
@@ -56,7 +53,10 @@ public class GameViewModel extends ViewModel {
     public void startNewRoundLocal() { session.startNextRound(); }
     public void startNextMultiplayerRound() { session.startNextRound(); }
 
-    public void startVotingLocal() { session.updateStatus(RoomStatus.VOTING); }    public void updateMultiplayerStatus(RoomStatus status) { session.updateStatus(RoomStatus.VOTING); }
+    public void startVotingLocal() { session.updateStatus(RoomStatus.VOTING); }
+
+    // THE FIX: It now correctly passes the requested status instead of hardcoding VOTING!
+    public void updateMultiplayerStatus(RoomStatus status) { session.updateStatus(status); }
 
     public void calculateLocalScores() { session.calculateScores(null); }
     public void calculateMultiplayerScores(Set<String> matched) { session.calculateScores(matched); }
@@ -92,10 +92,6 @@ public class GameViewModel extends ViewModel {
     public List<String> getLocalAnswers() { return session.getLocalAnswers(); }
     public Set<String> getLocalMatchedAnswers() { return session.getMatchedAnswers(); }
     public Set<Integer> getLocalDeletedPlayerIndices() { return session.getDeletedChoiceIndices(); }
-
-    // ======================================================================
-    // TEMPORARY PASS-THROUGHS (To prevent GameActivity from breaking)
-    // ======================================================================
 
     public LiveData<GameRoom> getRoomData() { return gameRepository.getRoomData(roomCode); }
 
