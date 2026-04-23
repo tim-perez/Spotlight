@@ -14,7 +14,9 @@ import com.google.firebase.database.MutableData;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 import com.spotlight.model.Question;
+import com.spotlight.model.RoomStatus;
 
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,9 +73,9 @@ public class GameRepository {
         });
     }
 
-    public void updateRoomStatus(String status) {
+    public void updateRoomStatus(RoomStatus status) {
         if (currentRoomRef != null) {
-            currentRoomRef.child("status").setValue(status);
+            currentRoomRef.child("status").setValue(status.name());
         }
     }
 
@@ -105,7 +107,7 @@ public class GameRepository {
         roomsRef.child(roomCode).get().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult().exists()) {
                 GameRoom room = task.getResult().getValue(GameRoom.class);
-                if (room != null && "WAITING".equals(room.getStatus())) {
+                if (room != null && room.getStatusEnum() == RoomStatus.WAITING) {
                     currentRoomRef = roomsRef.child(roomCode);
                     currentRoomRef.child("players").child(player.getId()).setValue(player)
                             .addOnSuccessListener(aVoid -> listener.onSuccess(room))
@@ -125,14 +127,28 @@ public class GameRepository {
     }
 
     public void createRoom(GameRoom room, Player host, OnCreateResultListener listener) {
-        currentRoomRef = roomsRef.child(room.getRoomCode());
-        currentRoomRef.setValue(room)
-                .addOnSuccessListener(aVoid -> {
-                    currentRoomRef.child("players").child(host.getId()).setValue(host)
-                            .addOnSuccessListener(v -> listener.onSuccess(room))
-                            .addOnFailureListener(e -> listener.onFailure("Failed to add host"));
-                })
-                .addOnFailureListener(e -> listener.onFailure("Failed to create room"));
+        // 1. Package the Player as a pure Map
+        Map<String, Object> hostData = new HashMap<>();
+        hostData.put("id", host.getId());
+        hostData.put("name", host.getName());
+        hostData.put("score", host.getScore());
+        hostData.put("joinTimestamp", host.getJoinTimestamp());
+        hostData.put("avatarColor", host.getAvatarColor());
+
+        Map<String, Object> playersMap = new HashMap<>();
+        playersMap.put(host.getId(), hostData);
+
+        // 2. Package the Room as a pure Map
+        Map<String, Object> safeRoomData = new HashMap<>();
+        safeRoomData.put("roomCode", room.getRoomCode());
+        safeRoomData.put("hostId", room.getHostId());
+        safeRoomData.put("status", "WAITING"); // Hardcoded safe string
+        safeRoomData.put("players", playersMap); // Attach the players map
+
+        // 3. Perform a single, atomic network push
+        roomsRef.child(room.getRoomCode()).setValue(safeRoomData)
+                .addOnSuccessListener(aVoid -> listener.onSuccess(room))
+                .addOnFailureListener(e -> listener.onFailure("Firebase Error: " + e.getMessage()));
     }
 
     public interface OnCreateResultListener {
@@ -155,6 +171,11 @@ public class GameRepository {
                 GameRoom room = mutableData.getValue(GameRoom.class);
                 if (room == null) return Transaction.success(mutableData);
 
+                // --- THE BULLETPROOF LOCK ---
+                if (room.getStatusEnum() == RoomStatus.RESULTS || room.getStatusEnum() == RoomStatus.FINISHED) {
+                    return Transaction.success(mutableData);
+                }
+
                 Map<String, Player> players = room.getPlayers();
                 if (players != null) {
                     for (Map.Entry<String, Integer> entry : pointsAwarded.entrySet()) {
@@ -165,14 +186,12 @@ public class GameRepository {
                     }
                 }
 
-                // 2. Safely append new logs
                 List<String> logs = room.getLogs();
                 if (logs == null) logs = new ArrayList<>();
                 logs.addAll(newLogs);
                 room.setLogs(logs);
 
-                // 3. Update Status
-                room.setStatus(isGameFinished ? "FINISHED" : "RESULTS");
+                room.setStatusEnum(isGameFinished ? RoomStatus.FINISHED : RoomStatus.RESULTS);
 
                 mutableData.setValue(room);
                 return Transaction.success(mutableData);
@@ -180,9 +199,9 @@ public class GameRepository {
 
             @Override
             public void onComplete(DatabaseError error, boolean committed, DataSnapshot currentData) {
-                if (error != null) {
-                }
             }
         });
     }
 }
+
+

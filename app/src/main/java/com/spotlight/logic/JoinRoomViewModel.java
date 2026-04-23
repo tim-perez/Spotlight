@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel;
 
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
+import com.spotlight.model.RoomStatus;
+
 import java.util.UUID;
 
 public class JoinRoomViewModel extends ViewModel {
@@ -55,7 +57,7 @@ public class JoinRoomViewModel extends ViewModel {
                 if (room.getPlayers() != null) {
                     statusText.setValue("Waiting for host... (" + room.getPlayers().size() + " players)");
                 }
-                if ("IN_PROGRESS".equals(room.getStatus())) {
+                if (room.getStatusEnum() != RoomStatus.WAITING) {
                     gameStarted.setValue(true);
                 }
             }

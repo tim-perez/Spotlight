@@ -43,25 +43,33 @@ public class CreateRoomViewModel extends ViewModel {
     public void createRoom(String hostName, int avatarColor) {
         this.playerId = UUID.randomUUID().toString();
         this.roomCode = generateRoomCode();
-        
+
         Player host = new Player(playerId, hostName);
         host.setAvatarColor(avatarColor);
         host.setJoinTimestamp(System.currentTimeMillis());
-        
+
         GameRoom room = new GameRoom(roomCode, playerId);
-        
+
         repository.createRoom(room, host, new GameRepository.OnCreateResultListener() {
             @Override
             public void onSuccess(GameRoom createdRoom) {
-                isRoomCreated.setValue(true);
+                isRoomCreated.postValue(true);
                 observeRoom();
             }
 
             @Override
             public void onFailure(String message) {
-                errorMessage.setValue(message);
+                errorMessage.postValue(message);
             }
         });
+
+        // THE FIX: A 7-second network timeout!
+        // If Firebase hangs, this resets the button so you aren't stuck forever.
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            if (Boolean.FALSE.equals(isRoomCreated.getValue())) {
+                errorMessage.postValue("Network Timeout: Check your Emulator's internet connection.");
+            }
+        }, 7000);
     }
 
     private void observeRoom() {
@@ -85,7 +93,10 @@ public class CreateRoomViewModel extends ViewModel {
         String spotlightId = !playersList.isEmpty() ? playersList.get(0).getId() : room.getHostId();
 
         Map<String, Object> updates = new HashMap<>();
-        updates.put("status", "IN_PROGRESS");
+
+        // THE FIX: Push a pure String to Firebase so it doesn't crash!
+        updates.put("status", "WAITING_FOR_ANSWERS");
+
         updates.put("category", category);
         updates.put("spotlightPlayerId", spotlightId);
         updates.put("currentQuestion", initialQuestion);

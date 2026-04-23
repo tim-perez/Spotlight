@@ -10,7 +10,9 @@ public class GameRoom implements Serializable {
     private Map<String, Player> players = new HashMap<>();
     private String currentQuestion;
     private String spotlightPlayerId;
-    private String status; // WAITING, IN_PROGRESS, FINISHED
+
+    private String status;
+
     private String category;
     private Map<String, String> guesses = new HashMap<>();
     private Map<String, String> votes = new HashMap<>();
@@ -23,7 +25,7 @@ public class GameRoom implements Serializable {
     public GameRoom(String roomCode, String hostId) {
         this.roomCode = roomCode;
         this.hostId = hostId;
-        this.status = "WAITING";
+        this.status = RoomStatus.WAITING.name();
     }
 
     public String getRoomCode() {
@@ -104,5 +106,20 @@ public class GameRoom implements Serializable {
 
     public void setLogs(java.util.List<String> logs) {
         this.logs = logs;
+    }
+
+
+    @com.google.firebase.database.Exclude
+    public RoomStatus getStatusEnum() {
+        try {
+            return status != null ? RoomStatus.valueOf(status) : RoomStatus.WAITING;
+        } catch (IllegalArgumentException e) {
+            return RoomStatus.WAITING;
+        }
+    }
+
+    @com.google.firebase.database.Exclude
+    public void setStatusEnum(RoomStatus roomStatus) {
+        this.status = roomStatus != null ? roomStatus.name() : RoomStatus.WAITING.name();
     }
 }
