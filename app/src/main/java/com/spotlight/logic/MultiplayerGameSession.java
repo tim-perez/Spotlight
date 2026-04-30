@@ -52,6 +52,38 @@ public class MultiplayerGameSession implements GameSession {
         roomObserver = room -> {
             if (room != null) {
 
+                // --- FAULT TOLERANCE: HOST MIGRATION ---
+                Map<String, Player> playersMap = room.getPlayers();
+                if (playersMap != null && !playersMap.isEmpty() && room.getHostId() != null) {
+
+                    if (!playersMap.containsKey(room.getHostId())) {
+                        // The host disconnected! Elect the player who has been in the room the longest.
+                        List<Player> remainingPlayers = new ArrayList<>(playersMap.values());
+                        Collections.sort(remainingPlayers, (p1, p2) -> Long.compare(p1.getJoinTimestamp(), p2.getJoinTimestamp()));
+                        String newHostId = remainingPlayers.get(0).getId();
+
+                        // Update local state immediately so this client knows its new role
+                        this.hostId = newHostId;
+
+                        // If I am the newly elected host, formally claim the room in Firebase
+                        if (this.playerId != null && this.playerId.equals(newHostId)) {
+                            Map<String, Object> updates = new HashMap<>();
+                            updates.put("hostId", newHostId);
+
+                            // Let everyone know what happened in the game logs!
+                            List<String> logs = room.getLogs();
+                            if (logs == null) logs = new ArrayList<>();
+                            logs.add("⚠️ The host disconnected. " + remainingPlayers.get(0).getName() + " is the new host!");
+                            updates.put("logs", logs);
+
+                            gameRepository.updateRoom(updates);
+                        }
+                    } else {
+                        // The host is still here, keep our local variable synced
+                        this.hostId = room.getHostId();
+                    }
+                }
+
                 if (isHost() && room.getSpotlightPlayerId() == null && room.getStatusEnum() != RoomStatus.WAITING) {
                     startNextRound();
                     return; // Stop here and wait for Firebase to return the initialized data
