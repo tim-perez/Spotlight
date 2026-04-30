@@ -72,6 +72,11 @@ public class CreateRoomActivity extends AppCompatActivity {
                 return;
             }
 
+            if (com.spotlight.util.ProfanityFilter.containsProfanity(name)) {
+                Toast.makeText(this, "Please keep names appropriate!", Toast.LENGTH_SHORT).show();
+                return; // Abort creation!
+            }
+
             // Visual feedback that the button was clicked
             binding.buttonGenerateRoom.setText("Creating...");
             binding.buttonGenerateRoom.setEnabled(false);

@@ -73,6 +73,11 @@ public class JoinRoomActivity extends AppCompatActivity {
                 return;
             }
 
+            if (com.spotlight.util.ProfanityFilter.containsProfanity(name)) {
+                Toast.makeText(this, "Please keep names appropriate!", Toast.LENGTH_SHORT).show();
+                return; // Abort join!
+            }
+
             viewModel.joinRoom(roomCode, name, selectedColor);
         });
     }
