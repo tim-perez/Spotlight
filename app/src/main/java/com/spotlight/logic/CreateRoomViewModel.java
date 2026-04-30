@@ -41,7 +41,7 @@ public class CreateRoomViewModel extends ViewModel {
     }
 
     public void createRoom(String hostName, int avatarColor) {
-        this.playerId = UUID.randomUUID().toString();
+        this.playerId = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
         this.roomCode = generateRoomCode();
 
         Player host = new Player(playerId, hostName);

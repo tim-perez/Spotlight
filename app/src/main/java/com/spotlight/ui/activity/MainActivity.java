@@ -27,6 +27,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        com.google.firebase.auth.FirebaseAuth auth = com.google.firebase.auth.FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() == null) {
+            auth.signInAnonymously().addOnCompleteListener(this, task -> {
+                if (!task.isSuccessful()) {
+                    android.util.Log.e("Auth", "Anonymous auth failed.", task.getException());
+                }
+            });
+        }
+
         CardView buttonPassAndPlay = findViewById(R.id.buttonPassAndPlay);
         CardView buttonMultiplayer = findViewById(R.id.buttonMultiplayer);
         CardView buttonHowToPlay = findViewById(R.id.buttonHowToPlay);
