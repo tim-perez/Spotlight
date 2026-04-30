@@ -27,9 +27,10 @@ public class JoinRoomViewModel extends ViewModel {
     }
 
     public void joinRoom(String roomCode, String playerName, int avatarColor) {
-        this.roomCode = roomCode.toUpperCase();
-        this.playerId = UUID.randomUUID().toString();
-        
+        this.roomCode = roomCode.toUpperCase().trim();
+
+        this.playerId = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+
         Player player = new Player(playerId, playerName);
         player.setAvatarColor(avatarColor);
         player.setJoinTimestamp(System.currentTimeMillis());
