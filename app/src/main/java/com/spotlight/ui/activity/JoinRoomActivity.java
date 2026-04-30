@@ -55,6 +55,19 @@ public class JoinRoomActivity extends AppCompatActivity {
         AvatarUtils.setupColorSelection(this, colorViews, color -> selectedColor = color);
         AvatarUtils.resetColorSelection(colorViews);
 
+        Intent intent = getIntent();
+        if (Intent.ACTION_VIEW.equals(intent.getAction())) {
+            android.net.Uri uri = intent.getData();
+            if (uri != null) {
+                // Extract the code from spotlight://join?code=ABCD
+                String prefilledCode = uri.getQueryParameter("code");
+                if (prefilledCode != null) {
+                    binding.editTextRoomCode.setText(prefilledCode.toUpperCase());
+                    Toast.makeText(this, "Invite code applied!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+
         binding.buttonBack.setOnClickListener(v -> {
             viewModel.leaveRoom();
             finish();

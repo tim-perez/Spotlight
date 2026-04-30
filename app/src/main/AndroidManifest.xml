@@ -22,7 +22,18 @@
         <activity android:name=".ui.activity.GameActivity" />
         <activity android:name=".ui.activity.MultiplayerMenuActivity" />
         <activity android:name=".ui.activity.CreateRoomActivity" />
-        <activity android:name=".ui.activity.JoinRoomActivity" />
+        <activity
+            android:name=".ui.activity.JoinRoomActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="spotlight" android:host="join" />
+            </intent-filter>
+
+        </activity>
     </application>
 
 </manifest>
