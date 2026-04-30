@@ -99,7 +99,11 @@ public class GameRepository {
 
     public void removePlayer(String playerId) {
         if (currentRoomRef != null) {
-            currentRoomRef.child("players").child(playerId).removeValue();
+            DatabaseReference playerRef = currentRoomRef.child("players").child(playerId);
+            // Remove the player immediately
+            playerRef.removeValue();
+            // Cancel the server-side disconnect hook since they left cleanly
+            playerRef.onDisconnect().cancel();
         }
     }
 
@@ -107,10 +111,16 @@ public class GameRepository {
         roomsRef.child(roomCode).get().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult().exists()) {
                 GameRoom room = task.getResult().getValue(GameRoom.class);
-                if (room != null && room.getStatusEnum() == RoomStatus.WAITING) {
+                if (room != null && "WAITING".equals(room.getStatus())) {
                     currentRoomRef = roomsRef.child(roomCode);
-                    currentRoomRef.child("players").child(player.getId()).setValue(player)
-                            .addOnSuccessListener(aVoid -> listener.onSuccess(room))
+                    DatabaseReference playerRef = currentRoomRef.child("players").child(player.getId());
+
+                    playerRef.setValue(player)
+                            .addOnSuccessListener(aVoid -> {
+                                // THE FIX: Automatically delete the Guesser if their app closes!
+                                playerRef.onDisconnect().removeValue();
+                                listener.onSuccess(room);
+                            })
                             .addOnFailureListener(e -> listener.onFailure("Failed to join room"));
                 } else {
                     listener.onFailure("Room already started");
@@ -127,7 +137,6 @@ public class GameRepository {
     }
 
     public void createRoom(GameRoom room, Player host, OnCreateResultListener listener) {
-        // 1. Package the Player as a pure Map
         Map<String, Object> hostData = new HashMap<>();
         hostData.put("id", host.getId());
         hostData.put("name", host.getName());
@@ -138,16 +147,17 @@ public class GameRepository {
         Map<String, Object> playersMap = new HashMap<>();
         playersMap.put(host.getId(), hostData);
 
-        // 2. Package the Room as a pure Map
         Map<String, Object> safeRoomData = new HashMap<>();
         safeRoomData.put("roomCode", room.getRoomCode());
         safeRoomData.put("hostId", room.getHostId());
-        safeRoomData.put("status", "WAITING"); // Hardcoded safe string
-        safeRoomData.put("players", playersMap); // Attach the players map
+        safeRoomData.put("status", "WAITING");
+        safeRoomData.put("players", playersMap);
 
-        // 3. Perform a single, atomic network push
         roomsRef.child(room.getRoomCode()).setValue(safeRoomData)
-                .addOnSuccessListener(aVoid -> listener.onSuccess(room))
+                .addOnSuccessListener(aVoid -> {
+                    roomsRef.child(room.getRoomCode()).child("players").child(host.getId()).onDisconnect().removeValue();
+                    listener.onSuccess(room);
+                })
                 .addOnFailureListener(e -> listener.onFailure("Firebase Error: " + e.getMessage()));
     }
 
