@@ -385,6 +385,11 @@ public class GameActivity extends AppCompatActivity {
     private void handleSubmitAnswer() {
         String answer = binding.editTextAnswer.getText().toString().trim();
         if (answer.isEmpty()) return;
+
+        if (com.spotlight.util.ProfanityFilter.containsProfanity(answer)) {
+            Toast.makeText(this, "Please keep answers appropriate!", Toast.LENGTH_SHORT).show();
+            return; // Abort submission, let them try again!
+        }
         viewModel.submitLocalAnswer(answer);
         binding.editTextAnswer.setText("");
     }
@@ -437,6 +442,12 @@ public class GameActivity extends AppCompatActivity {
     private void submitMultiplayerAnswer() {
         String answer = binding.editTextAnswer.getText().toString().trim();
         if (answer.isEmpty()) return;
+
+        if (com.spotlight.util.ProfanityFilter.containsProfanity(answer)) {
+            Toast.makeText(this, "Please keep answers appropriate!", Toast.LENGTH_SHORT).show();
+            return; // Abort submission, let them try again!
+        }
+
         viewModel.submitMultiplayerAnswer(answer);
         binding.editTextAnswer.setText("");
         binding.layoutAnswerInput.setVisibility(View.GONE);
