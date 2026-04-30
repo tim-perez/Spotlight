@@ -100,12 +100,24 @@ public class CreateRoomActivity extends AppCompatActivity {
     private void setupObservers() {
         viewModel.getIsRoomCreated().observe(this, isCreated -> {
             if (isCreated) {
-                binding.textViewRoomCodeDisplay.setText(getString(R.string.room_code_format, viewModel.getRoomCode()));
+                String code = viewModel.getRoomCode();
+                binding.textViewRoomCodeDisplay.setText("Room Code: " + code + "\n(Tap to Share Invite Link)");
                 binding.layoutRoomInfo.setVisibility(View.VISIBLE);
                 binding.buttonStartMultiplayer.setVisibility(View.VISIBLE);
                 binding.buttonGenerateRoom.setVisibility(View.GONE);
                 binding.layoutColorsHost.setVisibility(View.GONE);
                 binding.editTextHostName.setEnabled(false);
+
+                // THE FIX: Allow the host to tap the code to send a Deep Link
+                binding.textViewRoomCodeDisplay.setOnClickListener(v -> {
+                    String inviteLink = "spotlight://join?code=" + code;
+                    Intent sendIntent = new Intent();
+                    sendIntent.setAction(Intent.ACTION_SEND);
+                    sendIntent.putExtra(Intent.EXTRA_TEXT,
+                            "Join my Spotlight game! Tap here: " + inviteLink + "\n(Or enter code: " + code + ")");
+                    sendIntent.setType("text/plain");
+                    startActivity(Intent.createChooser(sendIntent, "Share Invite Link"));
+                });
             }
         });
 
