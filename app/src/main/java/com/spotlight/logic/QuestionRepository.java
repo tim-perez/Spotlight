@@ -19,6 +19,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.inject.Inject;
+import dagger.hilt.android.qualifiers.ApplicationContext;
+import android.content.Context;
+
 public class QuestionRepository {
     private List<Question> allQuestions = new ArrayList<>();
     private List<Question> currentPool = new ArrayList<>();
@@ -28,7 +32,8 @@ public class QuestionRepository {
         void onLoaded();
     }
 
-    public QuestionRepository(Context context) {
+    @Inject
+    public QuestionRepository(@ApplicationContext Context context) {
         this.context = context;
     }
 

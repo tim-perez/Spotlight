@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.spotlight.R;
 import com.spotlight.databinding.ActivityCreateRoomBinding;
 import com.spotlight.logic.CreateRoomViewModel;
-import com.spotlight.logic.ViewModelFactory;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 import com.spotlight.ui.adapter.PlayerAdapter;
@@ -22,6 +21,10 @@ import com.spotlight.util.AvatarUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+
+@AndroidEntryPoint
 public class CreateRoomActivity extends AppCompatActivity {
 
     private ActivityCreateRoomBinding binding;
@@ -36,8 +39,7 @@ public class CreateRoomActivity extends AppCompatActivity {
         binding = ActivityCreateRoomBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        ViewModelFactory factory = new ViewModelFactory(this);
-        viewModel = new ViewModelProvider(this, factory).get(CreateRoomViewModel.class);
+        viewModel = new ViewModelProvider(this).get(CreateRoomViewModel.class);
 
         initViews();
         setupObservers();

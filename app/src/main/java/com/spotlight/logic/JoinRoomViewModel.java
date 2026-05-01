@@ -8,8 +8,11 @@ import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 import com.spotlight.model.RoomStatus;
 
+import dagger.hilt.android.lifecycle.HiltViewModel;
+import javax.inject.Inject;
 import java.util.UUID;
 
+@HiltViewModel
 public class JoinRoomViewModel extends ViewModel {
 
     private final GameRepository repository;
@@ -22,6 +25,7 @@ public class JoinRoomViewModel extends ViewModel {
     private String playerId;
     private String roomCode;
 
+    @Inject
     public JoinRoomViewModel(GameRepository repository) {
         this.repository = repository;
     }

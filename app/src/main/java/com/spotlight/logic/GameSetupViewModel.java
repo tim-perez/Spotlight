@@ -8,6 +8,10 @@ import com.spotlight.model.Player;
 import java.util.ArrayList;
 import java.util.List;
 
+import dagger.hilt.android.lifecycle.HiltViewModel;
+import javax.inject.Inject;
+
+@HiltViewModel
 public class GameSetupViewModel extends ViewModel {
 
     private final MutableLiveData<List<Player>> players = new MutableLiveData<>(new ArrayList<>());
@@ -15,6 +19,7 @@ public class GameSetupViewModel extends ViewModel {
     private final QuestionRepository questionRepository;
     private int selectedColor = 0;
 
+    @Inject
     public GameSetupViewModel(QuestionRepository questionRepository) {
         this.questionRepository = questionRepository;
 

@@ -11,6 +11,10 @@ import com.spotlight.model.RoomStatus;
 import java.util.List;
 import java.util.Set;
 
+import dagger.hilt.android.lifecycle.HiltViewModel;
+import javax.inject.Inject;
+
+@HiltViewModel
 public class GameViewModel extends ViewModel {
 
     public enum Phase {
@@ -27,6 +31,7 @@ public class GameViewModel extends ViewModel {
     private GameSession session;
     private String roomCode;
 
+    @Inject
     public GameViewModel(GameRepository gameRepository, QuestionRepository questionRepository) {
         this.gameRepository = gameRepository;
         this.questionRepository = questionRepository;

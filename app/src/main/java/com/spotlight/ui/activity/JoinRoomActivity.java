@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.spotlight.R;
 import com.spotlight.databinding.ActivityJoinRoomBinding;
 import com.spotlight.logic.JoinRoomViewModel;
-import com.spotlight.logic.ViewModelFactory;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 import com.spotlight.ui.adapter.PlayerAdapter;
@@ -21,6 +20,9 @@ import com.spotlight.util.AvatarUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class JoinRoomActivity extends AppCompatActivity {
 
     private ActivityJoinRoomBinding binding;
@@ -35,8 +37,7 @@ public class JoinRoomActivity extends AppCompatActivity {
         binding = ActivityJoinRoomBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        ViewModelFactory factory = new ViewModelFactory(this);
-        viewModel = new ViewModelProvider(this, factory).get(JoinRoomViewModel.class);
+        viewModel = new ViewModelProvider(this).get(JoinRoomViewModel.class);
 
         initViews();
         setupObservers();
