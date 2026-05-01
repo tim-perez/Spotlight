@@ -8,7 +8,7 @@
 Spotlight is a peer-to-peer, real-time party card game for Android. Built with a focus on **distributed state management** and **fault-tolerant architecture**, the application synchronizes game phases across multiple remote clients with millisecond latency.
 
 <div align="center">
-  <img src="[Insert Link to a 5-second Gameplay GIF here]" alt="Spotlight Gameplay" width="250"/>
+  <img width="1080" height="701" alt="SPOTLIGHT-DEMO" src="https://github.com/user-attachments/assets/69a8ebdd-127e-4de4-a619-ddbb0f4f61c1" />
 </div>
 
 ---
