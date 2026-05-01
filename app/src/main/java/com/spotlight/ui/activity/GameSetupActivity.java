@@ -15,7 +15,6 @@ import com.spotlight.R;
 import com.spotlight.databinding.ActivityGameSetupBinding;
 import com.spotlight.databinding.DialogEditPlayerBinding;
 import com.spotlight.logic.GameSetupViewModel;
-import com.spotlight.logic.ViewModelFactory;
 import com.spotlight.model.Player;
 import com.spotlight.ui.adapter.PlayerAdapter;
 import com.spotlight.util.AvatarUtils;
@@ -23,6 +22,9 @@ import com.spotlight.util.AvatarUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class GameSetupActivity extends AppCompatActivity {
 
     private ActivityGameSetupBinding binding;
@@ -36,8 +38,7 @@ public class GameSetupActivity extends AppCompatActivity {
         binding = ActivityGameSetupBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        ViewModelFactory factory = new ViewModelFactory(this);
-        viewModel = new ViewModelProvider(this, factory).get(GameSetupViewModel.class);
+        viewModel = new ViewModelProvider(this).get(GameSetupViewModel.class);
 
         initViews();
         setupObservers();

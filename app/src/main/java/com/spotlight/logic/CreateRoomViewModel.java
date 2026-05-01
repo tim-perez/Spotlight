@@ -13,8 +13,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import dagger.hilt.android.lifecycle.HiltViewModel;
+import javax.inject.Inject;
+
 import java.util.UUID;
 
+@HiltViewModel
 public class CreateRoomViewModel extends ViewModel {
 
     private final GameRepository repository;
@@ -27,6 +32,7 @@ public class CreateRoomViewModel extends ViewModel {
     private String playerId;
     private String roomCode;
 
+    @Inject
     public CreateRoomViewModel(GameRepository repository, QuestionRepository questionRepository) {
         this.repository = repository;
         this.questionRepository = questionRepository;

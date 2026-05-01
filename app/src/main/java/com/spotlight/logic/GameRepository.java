@@ -25,12 +25,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
+
+
 public class GameRepository {
     private final DatabaseReference roomsRef;
     private DatabaseReference currentRoomRef;
     private ValueEventListener roomListener;
     private final MutableLiveData<GameRoom> roomData = new MutableLiveData<>();
 
+    @Inject
     public GameRepository() {
         roomsRef = FirebaseDatabase.getInstance().getReference("rooms");
     }

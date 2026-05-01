@@ -1,6 +1,5 @@
 package com.spotlight.ui.activity;
 
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
@@ -14,7 +13,6 @@ import com.spotlight.R;
 import com.spotlight.databinding.ActivityGameBinding;
 import com.spotlight.logic.GameViewModel;
 import com.spotlight.logic.GameViewModel.Phase;
-import com.spotlight.logic.ViewModelFactory;
 import com.spotlight.model.GameRoom;
 import com.spotlight.model.Player;
 import com.spotlight.model.RoomStatus;
@@ -32,6 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class GameActivity extends AppCompatActivity {
 
     private ActivityGameBinding binding;
@@ -52,8 +53,7 @@ public class GameActivity extends AppCompatActivity {
         binding = ActivityGameBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        ViewModelFactory factory = new ViewModelFactory(this);
-        viewModel = new ViewModelProvider(this, factory).get(GameViewModel.class);
+        viewModel = new ViewModelProvider(this).get(GameViewModel.class);
 
         initFromIntent();
         initViews();
