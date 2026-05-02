@@ -9,6 +9,12 @@ Spotlight is a peer-to-peer, real-time party card game for Android. Built with a
 
 <div align="center">
   <img width="1080" height="701" alt="SPOTLIGHT-DEMO" src="https://github.com/user-attachments/assets/69a8ebdd-127e-4de4-a619-ddbb0f4f61c1" />
+  <br/>
+  
+  **[📺 Watch the Full Architecture Demo on YouTube](https://www.youtube.com/watch?v=ERYhL9ozcco)**
+  
+  **[📥 Download the Latest APK to Play](https://github.com/tim-perez/Spotlight/releases/latest)**
+
 </div>
 
 ---
